@@ -33,6 +33,7 @@ interface HistoryPageProps {
   onDuplicateReport: (report: ReportData) => void;
   onDeleteReport: (id: string) => void;
   onExportDocx: (report: ReportData) => void;
+  onSelectReport?: (report: ReportData) => void;
   onOpenAdminAuth: () => void;
   onCreateNewReport: () => void;
 }
@@ -46,6 +47,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
   onDuplicateReport,
   onDeleteReport,
   onExportDocx,
+  onSelectReport,
   onOpenAdminAuth,
   onCreateNewReport,
 }) => {
@@ -283,19 +285,18 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                     </div>
 
                     <div className="flex flex-col items-end gap-1">
-                      {isCurrent && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700">
-                          Đang xem
-                        </span>
-                      )}
-                      <span className="text-[11px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">
+                      <span className="text-[11px] font-semibold text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded-md border border-slate-200/60">
                         Số: {item.so_van_ban ? `${item.so_van_ban}/VHIALY` : '---/VHIALY'}
                       </span>
                     </div>
                   </div>
 
                   {/* Date & Details */}
-                  <div className="space-y-2 py-3 border-y border-slate-100 text-xs text-slate-600">
+                  <div 
+                    onClick={() => onViewReport(item)}
+                    className="space-y-2 py-3 border-y border-slate-100 text-xs text-slate-600 cursor-pointer"
+                    title={`Bấm để xem chi tiết văn bản Tháng ${item.thang_nam}`}
+                  >
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-1.5 text-slate-500">
                         <Calendar className="w-3.5 h-3.5 text-slate-400" />
@@ -344,23 +345,25 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
 
                 {/* Card Actions Footer */}
                 <div className="p-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-2">
-                  {/* Left: View for all colleagues */}
+                  {/* Left: View & Export directly for this specific month */}
                   <div className="flex items-center gap-1.5 flex-1">
                     <button
                       onClick={() => onViewReport(item)}
-                      title="Xem toàn văn bản biên bản chuẩn A4"
-                      className="flex-1 py-1.5 px-3 text-xs font-bold text-blue-700 bg-white hover:bg-blue-50 border border-blue-200 rounded-xl transition flex items-center justify-center gap-1.5 shadow-2xs"
+                      title={`Xem toàn văn bản Tháng ${item.thang_nam} chuẩn A4`}
+                      className="flex-1 py-1.5 px-2.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 hover:text-blue-700 border border-slate-200 rounded-xl transition flex items-center justify-center gap-1.5 shadow-2xs"
                     >
                       <Eye className="w-3.5 h-3.5" />
                       <span>Xem chi tiết</span>
                     </button>
 
                     <button
+                      id={`btn-export-card-${item.id}`}
                       onClick={() => onExportDocx(item)}
-                      title="Tải file Word (.docx) của tháng này"
-                      className="p-1.5 text-slate-600 bg-white hover:bg-slate-100 border border-slate-200 hover:text-blue-600 rounded-xl transition"
+                      title={`Xuất file Word (.docx) của riêng Tháng ${item.thang_nam}`}
+                      className="py-1.5 px-3 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition flex items-center gap-1.5 shadow-2xs whitespace-nowrap"
                     >
-                      <Download className="w-4 h-4" />
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Xuất Word</span>
                     </button>
                   </div>
 

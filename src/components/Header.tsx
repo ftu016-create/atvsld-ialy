@@ -18,6 +18,8 @@ import { ReportData, UserRole, ViewTab } from '../types';
 
 interface HeaderProps {
   report: ReportData;
+  reportsList?: ReportData[];
+  onSelectReport?: (report: ReportData) => void;
   userRole: UserRole;
   onSave: () => void;
   onNew: () => void;
@@ -34,6 +36,8 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   report,
+  reportsList,
+  onSelectReport,
   userRole,
   onSave,
   onNew,
@@ -71,9 +75,13 @@ export const Header: React.FC<HeaderProps> = ({
                   <h1 className="font-bold text-slate-900 text-base sm:text-lg leading-tight tracking-tight">
                     Biên Bản ATVSLĐ
                   </h1>
-                  <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                    Tháng {report.thang_nam}
-                  </span>
+                  
+                  {/* Show current month badge ONLY when viewing or editing a specific report */}
+                  {activeTab !== 'history' && (
+                    <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                      Tháng {report.thang_nam}
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs text-slate-500 font-medium tracking-tight">
                   VHIALY  •  Công ty Thủy điện Ialy
@@ -211,8 +219,8 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             )}
 
-            {/* Admin-Only Save Button */}
-            {isAdmin && (
+            {/* Admin-Only Save Button: only shown when editing */}
+            {isAdmin && activeTab === 'edit' && (
               <button
                 id="btn-header-save"
                 onClick={onSave}
@@ -228,15 +236,18 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             )}
 
-            {/* Export Word (.docx) */}
-            <button
-              id="btn-header-export-docx"
-              onClick={onExportDocx}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-xl shadow-sm shadow-blue-500/25 transition whitespace-nowrap"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Xuất Word</span>
-            </button>
+            {/* Export Word (.docx): only shown when viewing or editing a single document */}
+            {activeTab !== 'history' && (
+              <button
+                id="btn-header-export-docx"
+                onClick={onExportDocx}
+                title={`Xuất file Word (.docx) cho biên bản Tháng ${report.thang_nam}`}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-xl shadow-sm shadow-blue-500/25 transition whitespace-nowrap"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Xuất Word</span>
+              </button>
+            )}
 
           </div>
 

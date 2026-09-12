@@ -303,6 +303,11 @@ export default function App() {
       {/* Navigation Header */}
       <Header
         report={report}
+        reportsList={reportsHistory}
+        onSelectReport={(target) => {
+          setReport(target);
+          showToast(`Đã chọn biên bản Tháng ${target.thang_nam}`, 'info');
+        }}
         userRole={userRole}
         onSave={handleSaveReport}
         onNew={handleNewReport}
@@ -325,6 +330,10 @@ export default function App() {
             currentReportId={report.id}
             userRole={userRole}
             onViewReport={handleViewReportDetails}
+            onSelectReport={(target) => {
+              setReport(target);
+              showToast(`Đã chọn biên bản Tháng ${target.thang_nam}`, 'info');
+            }}
             onEditReport={handleEditReport}
             onDuplicateReport={handleDuplicateReport}
             onDeleteReport={handleDeleteReport}
