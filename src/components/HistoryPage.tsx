@@ -20,7 +20,8 @@ import {
   Clock,
   ShieldCheck,
   Lock,
-  PlusCircle
+  PlusCircle,
+  Upload
 } from 'lucide-react';
 import { ReportData, UserRole } from '../types';
 
@@ -36,6 +37,8 @@ interface HistoryPageProps {
   onSelectReport?: (report: ReportData) => void;
   onOpenAdminAuth: () => void;
   onCreateNewReport: () => void;
+  onExportBackup?: () => void;
+  onImportBackup?: (file: File) => void;
 }
 
 export const HistoryPage: React.FC<HistoryPageProps> = ({
@@ -50,6 +53,8 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
   onSelectReport,
   onOpenAdminAuth,
   onCreateNewReport,
+  onExportBackup,
+  onImportBackup,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedYear, setSelectedYear] = useState<string>('all');
@@ -102,6 +107,72 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
 
   return (
     <div className="space-y-5">
+      {/* Admin Quick Action & Backup Bar */}
+      {isAdmin && (
+        <div className="bg-gradient-to-r from-blue-50/90 via-indigo-50/50 to-blue-50/90 border border-blue-200/80 rounded-2xl p-3.5 sm:p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-blue-950">
+                Bảng điều khiển Quản trị viên
+              </p>
+              <p className="text-[11px] text-blue-700/80">
+                Tự động chuyển tiếp tồn tại sang tháng mới & sao lưu dữ liệu an toàn
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              id="btn-history-create-new"
+              onClick={onCreateNewReport}
+              title="Tự động tính tháng tiếp theo và tự động chuyển tồn tại từ kỳ trước"
+              className="px-3 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition flex items-center gap-1.5"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              <span>+ Tạo tháng mới (Tự động)</span>
+            </button>
+
+            {onExportBackup && (
+              <button
+                id="btn-history-export-backup"
+                onClick={onExportBackup}
+                title="Sao lưu toàn bộ dữ liệu ra file JSON an toàn trên máy của bạn"
+                className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl shadow-2xs transition flex items-center gap-1.5"
+              >
+                <Download className="w-3.5 h-3.5 text-blue-600" />
+                <span>Sao lưu JSON</span>
+              </button>
+            )}
+
+            {onImportBackup && (
+              <label
+                id="btn-history-import-backup"
+                title="Nhập dữ liệu từ file backup JSON đã lưu trước đây"
+                className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl shadow-2xs transition flex items-center gap-1.5 cursor-pointer"
+              >
+                <Upload className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Phục hồi từ file</span>
+                <input
+                  type="file"
+                  accept=".json"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      onImportBackup(file);
+                      e.target.value = '';
+                    }
+                  }}
+                />
+              </label>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Filter and Search Bar */}
       <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
         

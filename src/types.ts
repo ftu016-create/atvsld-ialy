@@ -4,6 +4,7 @@ export interface InspectionRow {
   result: string;
   recommendation: string;
   note: string;
+  status?: 'completed' | 'in_progress' | 'pending';
 }
 
 export interface InspectionGroup {

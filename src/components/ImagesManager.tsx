@@ -5,12 +5,11 @@ import {
   Trash2, 
   Plus, 
   Image as ImageIcon, 
-  CheckCircle2, 
-  Info,
   Maximize2,
   X,
   Loader2,
-  Layers
+  Building2,
+  HelpCircle
 } from 'lucide-react';
 import heic2any from 'heic2any';
 import { ReportImage } from '../types';
@@ -24,6 +23,8 @@ export const ImagesManager: React.FC<ImagesManagerProps> = ({ images, onChange }
   const [previewModalUrl, setPreviewModalUrl] = useState<string | null>(null);
   const [isConverting, setIsConverting] = useState<boolean>(false);
   const [convertingMessage, setConvertingMessage] = useState<string>('');
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [showClearConfirm, setShowClearConfirm] = useState<boolean>(false);
 
   // Process File with HEIC/HEIF conversion & Canvas resizing
   const processImageFile = async (file: File): Promise<string> => {
@@ -81,399 +82,353 @@ export const ImagesManager: React.FC<ImagesManagerProps> = ({ images, onChange }
     });
   };
 
-  // Upload for a specific row & side
-  const handleSingleUpload = async (file: File, stt: number, side: 'ST' | 'MR') => {
-    const dataUrl = await processImageFile(file);
-    const sideName = side === 'ST' ? 'NMTĐ Ialy' : 'NMTĐ Ialy MR';
-    const defaultCaption = `Hiện trường kiểm tra vị trí ${stt} (${sideName})`;
+  // Bulk Upload Multiple Files via Drag & Drop or Input Selection
+  const handleProcessMultipleFiles = async (fileList: FileList | File[]) => {
+    if (!fileList || fileList.length === 0) return;
 
-    const nextImages = [...images];
-    const existingIdx = nextImages.findIndex((img) => img.stt === stt && img.side === side);
+    setIsConverting(true);
+    setConvertingMessage(`Đang tối ưu hóa ${fileList.length} ảnh hiện trường...`);
 
-    if (existingIdx >= 0) {
-      nextImages[existingIdx] = {
-        ...nextImages[existingIdx],
-        dataUrl,
-        filename: file.name,
-      };
-    } else {
-      nextImages.push({
-        id: `img_${Date.now()}_${stt}_${side}`,
-        stt,
-        side,
-        caption: defaultCaption,
-        dataUrl,
-        filename: file.name,
-      });
+    try {
+      const nextImages = [...images];
+      // Calculate current max STT
+      let currentMaxStt = nextImages.length > 0 ? Math.max(...nextImages.map((x) => Number(x.stt))) : 0;
+
+      // Check existing unpaired STTs
+      for (let i = 0; i < fileList.length; i++) {
+        const file = fileList[i];
+        if (!file.type.startsWith('image/') && !file.name.toLowerCase().endsWith('.heic')) {
+          continue;
+        }
+
+        const dataUrl = await processImageFile(file);
+        
+        // Find next appropriate slot
+        // Try pairing into an existing STT that only has ST or MR
+        let chosenStt = 0;
+        let chosenSide: 'ST' | 'MR' = 'ST';
+
+        for (let s = 1; s <= currentMaxStt; s++) {
+          const hasST = nextImages.some((x) => x.stt === s && x.side === 'ST');
+          const hasMR = nextImages.some((x) => x.stt === s && x.side === 'MR');
+          if (!hasST) {
+            chosenStt = s;
+            chosenSide = 'ST';
+            break;
+          } else if (!hasMR) {
+            chosenStt = s;
+            chosenSide = 'MR';
+            break;
+          }
+        }
+
+        if (chosenStt === 0) {
+          currentMaxStt += 1;
+          chosenStt = currentMaxStt;
+          chosenSide = 'ST';
+        }
+
+        const sideName = chosenSide === 'ST' ? 'NMTĐ Ialy' : 'NMTĐ Ialy MR';
+        // Auto extract caption hint from filename if reasonable
+        const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+        const caption = cleanName.length > 3 && cleanName.length < 50 
+          ? `${cleanName} (${sideName})`
+          : `Hiện trường kiểm tra vị trí ${chosenStt} (${sideName})`;
+
+        nextImages.push({
+          id: `img_${Date.now()}_${i}_${Math.random().toString(36).substring(2, 6)}`,
+          stt: chosenStt,
+          side: chosenSide,
+          caption,
+          dataUrl,
+          filename: file.name,
+        });
+      }
+
+      nextImages.sort((a, b) => a.stt - b.stt || (a.side === 'ST' ? -1 : 1));
+      onChange(nextImages);
+    } catch (e) {
+      console.error('Error handling files upload:', e);
+    } finally {
+      setIsConverting(false);
+      setConvertingMessage('');
     }
+  };
 
-    nextImages.sort((a, b) => a.stt - b.stt || (a.side === 'ST' ? -1 : 1));
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      await handleProcessMultipleFiles(e.dataTransfer.files);
+    }
+  };
+
+  const handleUpdateCaption = (id: string, caption: string) => {
+    const nextImages = images.map((img) => (img.id === id ? { ...img, caption } : img));
     onChange(nextImages);
   };
 
-  // Bulk Upload Multiple Files
-  const handleBulkUpload = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-
-    let nextImages = [...images];
-    let currentMaxStt = nextImages.length > 0 ? Math.max(...nextImages.map((x) => Number(x.stt))) : 0;
-
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const dataUrl = await processImageFile(file);
-      const stt = currentMaxStt + Math.floor(i / 2) + 1;
-      const side: 'ST' | 'MR' = i % 2 === 0 ? 'ST' : 'MR';
-      const sideName = side === 'ST' ? 'NMTĐ Ialy' : 'NMTĐ Ialy MR';
-
-      nextImages.push({
-        id: `img_${Date.now()}_${i}_${Math.random().toString(36).substring(2, 6)}`,
-        stt,
-        side,
-        caption: `Hiện trường kiểm tra vị trí ${stt} (${sideName})`,
-        dataUrl,
-        filename: file.name,
-      });
-    }
-
-    nextImages.sort((a, b) => a.stt - b.stt || (a.side === 'ST' ? -1 : 1));
-    onChange(nextImages);
-  };
-
-  const handleUpdateCaption = (stt: number, side: 'ST' | 'MR', caption: string) => {
-    const nextImages = [...images];
-    const targetIdx = nextImages.findIndex((img) => img.stt === stt && img.side === side);
-    if (targetIdx >= 0) {
-      nextImages[targetIdx] = { ...nextImages[targetIdx], caption };
-      onChange(nextImages);
-    } else {
-      nextImages.push({
-        id: `img_${Date.now()}_${stt}_${side}`,
-        stt,
-        side,
-        caption,
-        dataUrl: '',
-        filename: '',
-      });
-      onChange(nextImages);
-    }
-  };
-
-  const handleAddImageRow = () => {
-    const maxStt = images.length > 0 ? Math.max(...images.map((img) => Number(img.stt))) + 1 : 1;
-    const newItems: ReportImage[] = [
-      ...images,
-      {
-        id: `img_${Date.now()}_st`,
-        stt: maxStt,
-        side: 'ST',
-        caption: `Hiện trường kiểm tra vị trí ${maxStt} (NMTĐ Ialy)`,
-        dataUrl: '',
-        filename: '',
-      },
-      {
-        id: `img_${Date.now()}_mr`,
-        stt: maxStt,
-        side: 'MR',
-        caption: `Hiện trường kiểm tra vị trí ${maxStt} (NMTĐ Ialy MR)`,
-        dataUrl: '',
-        filename: '',
-      },
-    ];
-    onChange(newItems);
-  };
-
-  const handleRemoveImageRow = (sttToRemove: number) => {
-    // Remove all images with this stt and renumber remaining
-    const remaining = images.filter((img) => img.stt !== sttToRemove);
-    const uniqueStts = (Array.from(new Set(remaining.map((img) => Number(img.stt)))) as number[]).sort((a: number, b: number) => a - b);
-    
-    // Remap STT sequentially 1, 2, 3...
-    const sttMap: Record<number, number> = {};
-    uniqueStts.forEach((oldStt: number, index: number) => {
-      sttMap[oldStt] = index + 1;
+  const handleToggleSide = (id: string) => {
+    const nextImages = images.map((img) => {
+      if (img.id === id) {
+        const nextSide: 'ST' | 'MR' = img.side === 'ST' ? 'MR' : 'ST';
+        const nextSideName = nextSide === 'ST' ? 'NMTĐ Ialy' : 'NMTĐ Ialy MR';
+        return {
+          ...img,
+          side: nextSide,
+          caption: img.caption.includes('(')
+            ? img.caption.replace(/\(NMTĐ Ialy.*?\)/, `(${nextSideName})`)
+            : `${img.caption} (${nextSideName})`,
+        };
+      }
+      return img;
     });
-
-    const renumbered = remaining.map((img) => ({
-      ...img,
-      stt: sttMap[img.stt] || img.stt,
-    }));
-
-    onChange(renumbered);
+    nextImages.sort((a, b) => a.stt - b.stt || (a.side === 'ST' ? -1 : 1));
+    onChange(nextImages);
   };
 
-  // Get distinct list of row STTs
-  const allSttList: number[] = (Array.from(new Set(images.map((x) => Number(x.stt)))) as number[]).sort((a: number, b: number) => a - b);
-  if (allSttList.length === 0) {
-    allSttList.push(1, 2, 3);
-  }
+  const handleUpdateStt = (id: string, newStt: number) => {
+    if (newStt < 1) return;
+    const nextImages = images.map((img) => (img.id === id ? { ...img, stt: newStt } : img));
+    nextImages.sort((a, b) => a.stt - b.stt || (a.side === 'ST' ? -1 : 1));
+    onChange(nextImages);
+  };
+
+  const handleDeleteImage = (id: string) => {
+    const nextImages = images.filter((img) => img.id !== id);
+    onChange(nextImages);
+  };
 
   return (
-    <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-xs">
+    <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-xs" id="images">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-4 border-b border-slate-100 gap-3">
         <div className="flex items-center gap-2">
           <Camera className="w-5 h-5 text-blue-600" />
           <div>
             <h2 className="text-base font-bold text-slate-900">
-              5. Phụ lục: Các hình ảnh kiểm tra thực tế
+              5. Phụ lục: Các hình ảnh kiểm tra thực tế ({images.length} ảnh)
             </h2>
             <p className="text-xs text-slate-500">
-              Mỗi dòng gồm NMTĐ Ialy và NMTĐ Ialy MR song song • Hỗ trợ JPG/PNG/HEIC iPhone
+              Hỗ trợ kéo thả nhiều ảnh cùng lúc, tự động ghép đôi NMTĐ Ialy và Ialy Mở Rộng
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Quick upload all */}
-          <label className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition cursor-pointer">
-            <Upload className="w-4 h-4" />
-            <span>Tải hàng loạt ảnh</span>
-            <input
-              type="file"
-              multiple
-              accept="image/*,.heic,.heif"
-              className="hidden"
-              onChange={(e) => handleBulkUpload(e.target.files)}
-            />
-          </label>
-
-          <button
-            type="button"
-            onClick={handleAddImageRow}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition"
-          >
-            <Plus className="w-4 h-4" />
-            <span>+ Thêm dòng hình ảnh</span>
-          </button>
+          {images.length > 0 && (
+            showClearConfirm ? (
+              <div className="flex items-center gap-1.5 p-1 bg-red-50 border border-red-200 rounded-lg text-xs animate-in fade-in duration-150">
+                <span className="text-red-700 font-semibold px-1">Xóa toàn bộ {images.length} ảnh?</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange([]);
+                    setShowClearConfirm(false);
+                  }}
+                  className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white font-bold rounded text-[11px] transition shadow-2xs"
+                >
+                  Đồng ý xóa
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowClearConfirm(false)}
+                  className="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded text-[11px] transition"
+                >
+                  Hủy
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowClearConfirm(true)}
+                className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg border border-red-200 transition"
+              >
+                Xóa tất cả ảnh
+              </button>
+            )
+          )}
         </div>
       </div>
 
       {/* Converting notification */}
       {isConverting && (
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-2 text-xs font-medium text-blue-800 animate-pulse">
-          <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-          <span>{convertingMessage || 'Đang xử lý và chuyển đổi định dạng ảnh...'}</span>
+        <div className="mb-4 p-3.5 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-2.5 text-xs font-medium text-blue-800 animate-pulse">
+          <Loader2 className="w-4 h-4 animate-spin text-blue-600 shrink-0" />
+          <span>{convertingMessage || 'Đang xử lý hình ảnh...'}</span>
         </div>
       )}
 
-      {/* Rows Container */}
-      <div className="space-y-4" id="images">
-        {allSttList.map((stt) => {
-          const imgST = images.find((x) => x.stt === stt && x.side === 'ST');
-          const imgMR = images.find((x) => x.stt === stt && x.side === 'MR');
-
-          return (
-            <div
-              key={stt}
-              data-stt={stt}
-              className="p-4 bg-slate-50/70 border border-slate-200/80 rounded-2xl transition hover:border-slate-300"
-            >
-              {/* Row Header */}
-              <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200/60">
-                <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-lg bg-blue-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">
-                    {stt}
-                  </span>
-                  <span className="text-xs font-bold text-slate-800">
-                    Cặp hình ảnh vị trí số {stt}
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => handleRemoveImageRow(stt)}
-                  className="text-xs font-medium text-slate-400 hover:text-red-600 hover:bg-red-50 px-2 py-1 rounded-lg transition flex items-center gap-1"
-                  title="Xóa dòng hình ảnh này"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Xóa dòng {stt}</span>
-                </button>
-              </div>
-
-              {/* Side by Side Grid (NMTĐ Ialy & MR) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* 1. NMTĐ Ialy */}
-                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-                      NMTĐ Ialy
-                    </span>
-                    {imgST?.dataUrl && (
-                      <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" />
-                        Đã có ảnh
-                      </span>
-                    )}
-                  </div>
-
-                  <input
-                    type="text"
-                    value={imgST?.caption || ''}
-                    onChange={(e) => handleUpdateCaption(stt, 'ST', e.target.value)}
-                    placeholder="Chú thích hình NMTĐ Ialy..."
-                    className="w-full px-3 py-1.5 text-xs bg-slate-50 focus:bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden font-medium"
-                  />
-
-                  {imgST?.dataUrl ? (
-                    <div className="relative group rounded-lg overflow-hidden border border-slate-200 bg-slate-100">
-                      <img
-                        src={imgST.dataUrl}
-                        alt="NMTĐ Ialy"
-                        className="w-full h-40 object-cover"
-                      />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setPreviewModalUrl(imgST.dataUrl)}
-                          className="px-2.5 py-1.5 bg-white text-slate-900 rounded-lg text-xs font-medium shadow-xs flex items-center gap-1"
-                        >
-                          <Maximize2 className="w-3.5 h-3.5" />
-                          Xem to
-                        </button>
-                        <label className="px-2.5 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium shadow-xs flex items-center gap-1 cursor-pointer">
-                          <Upload className="w-3.5 h-3.5" />
-                          Đổi ảnh
-                          <input
-                            type="file"
-                            accept="image/*,.heic,.heif"
-                            className="hidden"
-                            onChange={(e) => {
-                              const f = e.target.files?.[0];
-                              if (f) handleSingleUpload(f, stt, 'ST');
-                            }}
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  ) : (
-                    <label className="border-2 border-dashed border-slate-200 hover:border-blue-400 hover:bg-blue-50/30 rounded-lg p-4 text-center cursor-pointer transition flex flex-col items-center justify-center gap-1.5">
-                      <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center">
-                        <ImageIcon className="w-4 h-4" />
-                      </div>
-                      <span className="text-xs font-semibold text-slate-600">
-                        Chưa chọn hình
-                      </span>
-                      <span className="text-[10px] text-slate-400">
-                        Bấm để chọn file (JPG, PNG, HEIC)
-                      </span>
-                      <input
-                        type="file"
-                        accept="image/*,.heic,.heif"
-                        className="hidden"
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (f) handleSingleUpload(f, stt, 'ST');
-                        }}
-                      />
-                    </label>
-                  )}
-                </div>
-
-                {/* 2. NMTĐ Ialy Mở Rộng */}
-                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-amber-600"></span>
-                      NMTĐ Ialy Mở Rộng
-                    </span>
-                    {imgMR?.dataUrl && (
-                      <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" />
-                        Đã có ảnh
-                      </span>
-                    )}
-                  </div>
-
-                  <input
-                    type="text"
-                    value={imgMR?.caption || ''}
-                    onChange={(e) => handleUpdateCaption(stt, 'MR', e.target.value)}
-                    placeholder="Chú thích hình NMTĐ Ialy Mở Rộng..."
-                    className="w-full px-3 py-1.5 text-xs bg-slate-50 focus:bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden font-medium"
-                  />
-
-                  {imgMR?.dataUrl ? (
-                    <div className="relative group rounded-lg overflow-hidden border border-slate-200 bg-slate-100">
-                      <img
-                        src={imgMR.dataUrl}
-                        alt="NMTĐ Ialy MR"
-                        className="w-full h-40 object-cover"
-                      />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setPreviewModalUrl(imgMR.dataUrl)}
-                          className="px-2.5 py-1.5 bg-white text-slate-900 rounded-lg text-xs font-medium shadow-xs flex items-center gap-1"
-                        >
-                          <Maximize2 className="w-3.5 h-3.5" />
-                          Xem to
-                        </button>
-                        <label className="px-2.5 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium shadow-xs flex items-center gap-1 cursor-pointer">
-                          <Upload className="w-3.5 h-3.5" />
-                          Đổi ảnh
-                          <input
-                            type="file"
-                            accept="image/*,.heic,.heif"
-                            className="hidden"
-                            onChange={(e) => {
-                              const f = e.target.files?.[0];
-                              if (f) handleSingleUpload(f, stt, 'MR');
-                            }}
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  ) : (
-                    <label className="border-2 border-dashed border-slate-200 hover:border-amber-400 hover:bg-amber-50/30 rounded-lg p-4 text-center cursor-pointer transition flex flex-col items-center justify-center gap-1.5">
-                      <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center">
-                        <ImageIcon className="w-4 h-4" />
-                      </div>
-                      <span className="text-xs font-semibold text-slate-600">
-                        Chưa chọn hình
-                      </span>
-                      <span className="text-[10px] text-slate-400">
-                        Bấm để chọn file (JPG, PNG, HEIC)
-                      </span>
-                      <input
-                        type="file"
-                        accept="image/*,.heic,.heif"
-                        className="hidden"
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (f) handleSingleUpload(f, stt, 'MR');
-                        }}
-                      />
-                    </label>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })}
+      {/* Modern Multi-File Drag and Drop Zone */}
+      <div
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={`p-6 border-2 border-dashed rounded-2xl text-center transition cursor-pointer flex flex-col items-center justify-center gap-2 ${
+          isDragging
+            ? 'border-blue-500 bg-blue-50/70 scale-[1.01]'
+            : 'border-slate-300 hover:border-blue-400 bg-slate-50/50 hover:bg-blue-50/20'
+        }`}
+      >
+        <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center shadow-xs">
+          <Upload className="w-6 h-6" />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-slate-800">
+            Kéo thả nhiều ảnh vào đây, hoặc{' '}
+            <label className="text-blue-600 hover:underline cursor-pointer">
+              bấm để chọn ảnh từ máy
+              <input
+                type="file"
+                multiple
+                accept="image/*,.heic,.heif"
+                className="hidden"
+                onChange={(e) => handleProcessMultipleFiles(e.target.files || [])}
+              />
+            </label>
+          </p>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Chọn cùng lúc nhiều file ảnh (JPG, PNG, HEIC iPhone). Hệ thống tự động nén dung lượng và ghép theo cặp STT.
+          </p>
+        </div>
       </div>
 
-      {/* Fullscreen Preview Modal */}
+      {/* Compact Image Gallery with dedicated Caption Input for each image */}
+      {images.length > 0 ? (
+        <div className="mt-6 space-y-3">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-700 pb-1">
+            <span>Danh sách ảnh đã tải lên ({images.length} ảnh) — Nhập chú thích trực tiếp dưới từng hình:</span>
+            <span className="text-slate-400 font-normal text-[11px]">Bấm vào thẻ nhà máy để đổi giữa Ialy & Ialy MR</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {images.map((img) => {
+              const isST = img.side === 'ST';
+
+              return (
+                <div
+                  key={img.id}
+                  className="bg-slate-50 border border-slate-200/90 rounded-xl overflow-hidden shadow-2xs flex flex-col hover:border-slate-300 transition"
+                >
+                  {/* Image Preview thumbnail with actions */}
+                  <div className="relative h-44 bg-slate-900/5 group flex items-center justify-center overflow-hidden">
+                    {img.dataUrl ? (
+                      <img
+                        src={img.dataUrl}
+                        alt={img.caption}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                      />
+                    ) : (
+                      <ImageIcon className="w-8 h-8 text-slate-400" />
+                    )}
+
+                    {/* Top overlay badges */}
+                    <div className="absolute top-2 left-2 flex items-center gap-1.5">
+                      <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-900/80 text-white backdrop-blur-xs">
+                        Vị trí #{img.stt}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleSide(img.id)}
+                        title="Bấm để đổi giữa Ialy Thường và Ialy Mở Rộng"
+                        className={`px-2 py-0.5 rounded-md text-[11px] font-bold shadow-xs transition flex items-center gap-1 ${
+                          isST
+                            ? 'bg-blue-600 text-white hover:bg-blue-700'
+                            : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                        }`}
+                      >
+                        <Building2 className="w-3 h-3" />
+                        <span>{isST ? 'NMTĐ Ialy' : 'NMTĐ Ialy MR'}</span>
+                      </button>
+                    </div>
+
+                    {/* Action buttons on image */}
+                    <div className="absolute top-2 right-2 flex items-center gap-1">
+                      {img.dataUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewModalUrl(img.dataUrl)}
+                          title="Xem phóng to ảnh"
+                          className="p-1.5 rounded-lg bg-black/60 hover:bg-black/80 text-white backdrop-blur-xs transition"
+                        >
+                          <Maximize2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteImage(img.id)}
+                        title="Xóa ảnh này"
+                        className="p-1.5 rounded-lg bg-red-600/90 hover:bg-red-700 text-white backdrop-blur-xs transition"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Caption & Position Controls */}
+                  <div className="p-3 bg-white flex-1 flex flex-col justify-between space-y-2">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                        <span>Chú thích hình ảnh:</span>
+                        <div className="flex items-center gap-1 text-slate-500 font-normal">
+                          <span>Cặp số:</span>
+                          <input
+                            type="number"
+                            min={1}
+                            max={50}
+                            value={img.stt}
+                            onChange={(e) => handleUpdateStt(img.id, parseInt(e.target.value, 10) || 1)}
+                            className="w-10 px-1 py-0.5 text-center text-xs border border-slate-200 rounded font-bold"
+                          />
+                        </div>
+                      </label>
+                      <input
+                        type="text"
+                        value={img.caption}
+                        onChange={(e) => handleUpdateCaption(img.id, e.target.value)}
+                        placeholder="Nhập chú thích hiện trường kiểm tra..."
+                        className="w-full px-2.5 py-1.5 text-xs bg-slate-50 focus:bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden transition"
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className="mt-4 p-4 rounded-xl bg-slate-50 text-center text-xs text-slate-500 border border-slate-100">
+          Chưa có hình ảnh hiện trường nào được tải lên cho biên bản tháng này.
+        </div>
+      )}
+
+      {/* Image Preview Modal */}
       {previewModalUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-          <div className="relative max-w-4xl w-full bg-white rounded-2xl overflow-hidden shadow-2xl">
-            <div className="flex items-center justify-between p-4 border-b border-slate-100">
-              <span className="text-sm font-bold text-slate-800">Xem ảnh chi tiết</span>
-              <button
-                type="button"
-                onClick={() => setPreviewModalUrl(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-4 flex items-center justify-center bg-slate-900">
-              <img
-                src={previewModalUrl}
-                alt="Preview"
-                className="max-h-[75vh] object-contain rounded-lg"
-              />
-            </div>
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-xs"
+          onClick={() => setPreviewModalUrl(null)}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] bg-black rounded-2xl overflow-hidden shadow-2xl">
+            <button
+              onClick={() => setPreviewModalUrl(null)}
+              className="absolute top-3 right-3 p-2 bg-white/20 hover:bg-white/40 text-white rounded-full transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <img src={previewModalUrl} alt="Phóng to" className="max-w-full max-h-[85vh] object-contain mx-auto" />
           </div>
         </div>
       )}

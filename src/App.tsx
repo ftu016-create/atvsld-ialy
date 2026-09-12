@@ -22,6 +22,12 @@ import {
   DEFAULT_MEMBERS, 
   DEFAULT_RECOMMENDATIONS 
 } from './data/defaultData';
+import { 
+  createAutomatedNewReport, 
+  exportBackupToJson, 
+  importBackupFromJson,
+  sanitizeReportGroups
+} from './utils/reportAutomation';
 import { generateAndDownloadDocx } from './utils/docxGenerator';
 import { Header } from './components/Header';
 import { ReportMetaForm } from './components/ReportMetaForm';
@@ -33,6 +39,9 @@ import { LiveDocumentPreview } from './components/LiveDocumentPreview';
 import { HistoryModal } from './components/HistoryModal';
 import { HistoryPage } from './components/HistoryPage';
 import { AdminAuthModal } from './components/AdminAuthModal';
+import { NewReportModal } from './components/NewReportModal';
+import { SignatureModal } from './components/SignatureModal';
+import { DeleteReportModal } from './components/DeleteReportModal';
 
 const STORAGE_KEY = 'atvsld_ialy_reports_v2';
 const CURRENT_REPORT_KEY = 'atvsld_ialy_current_v2';
@@ -59,14 +68,14 @@ export default function App() {
       if (savedHistory) {
         const parsed = JSON.parse(savedHistory);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          return parsed.map((r) => sanitizeReportGroups(r));
         }
       }
     } catch (e) {
       console.error('Failed to load history from localStorage', e);
     }
     // Initialize with 3 authentic months (Tháng 07, 06, 05/2026) for colleagues to explore
-    return createInitialReportsList();
+    return createInitialReportsList().map((r) => sanitizeReportGroups(r));
   });
 
   // Current report being viewed or edited
@@ -74,12 +83,12 @@ export default function App() {
     try {
       const savedCurrent = localStorage.getItem(CURRENT_REPORT_KEY);
       if (savedCurrent) {
-        return JSON.parse(savedCurrent);
+        return sanitizeReportGroups(JSON.parse(savedCurrent));
       }
     } catch (e) {
       console.error('Failed to load initial report from localStorage', e);
     }
-    return createNewReport('07/2026');
+    return sanitizeReportGroups(createNewReport('07/2026'));
   });
 
   // Active view: 'history' (Trang lịch sử các tháng) | 'preview' (Xem bản in) | 'edit' (Soạn thảo - Admin only)
@@ -94,6 +103,15 @@ export default function App() {
   // Modals state
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isAdminAuthOpen, setIsAdminAuthOpen] = useState(false);
+  const [isNewReportModalOpen, setIsNewReportModalOpen] = useState(false);
+  const [previewSigningMemberIndex, setPreviewSigningMemberIndex] = useState<number | null>(null);
+  const [reportToDelete, setReportToDelete] = useState<ReportData | null>(null);
+
+  // Auto-repair any misplaced Group 7 rows that were saved in localStorage
+  useEffect(() => {
+    setReport((curr) => sanitizeReportGroups(curr));
+    setReportsHistory((prevList) => prevList.map((r) => sanitizeReportGroups(r)));
+  }, []);
 
   // Sync userRole to localStorage
   useEffect(() => {
@@ -174,16 +192,104 @@ export default function App() {
 
   const handleNewReport = () => {
     if (userRole !== 'admin') {
-      showToast('Chỉ Quản trị viên (Admin) mới có quyền tạo biên bản mới!', 'error');
+      showToast('Chỉ Quản trị viên (Admin) mới có quyền tạo biên bản mới! Mời nhập mật khẩu Admin.', 'error');
+      setIsAdminAuthOpen(true);
+      return;
+    }
+    setIsNewReportModalOpen(true);
+  };
+
+  const handleConfirmCreateReport = (newReport: ReportData, transferredCount: number) => {
+    setReport(newReport);
+    setReportsHistory([newReport, ...reportsHistory]);
+    setActiveTab('edit');
+    if (transferredCount > 0) {
+      showToast(`Đã tạo Tháng ${newReport.thang_nam} và tự động chuyển tiếp ${transferredCount} tồn tại sang Mục 7!`, 'success');
+    } else {
+      showToast(`Đã tạo biên bản tự động Tháng ${newReport.thang_nam} (Số ${newReport.so_van_ban}/VHIALY)!`, 'success');
+    }
+  };
+
+  const handleSavePreviewSignature = (memberIndex: number, signatureDataUrl: string) => {
+    const nextMembers = [...report.members];
+    if (nextMembers[memberIndex]) {
+      nextMembers[memberIndex] = {
+        ...nextMembers[memberIndex],
+        signatureUrl: signatureDataUrl,
+      };
+      handleUpdateField('members', nextMembers);
+      showToast(`Đã lưu chữ ký cho ${nextMembers[memberIndex].name}!`, 'success');
+    }
+    setPreviewSigningMemberIndex(null);
+  };
+
+  const handleRemovePreviewSignature = (memberIndex: number) => {
+    const nextMembers = [...report.members];
+    if (nextMembers[memberIndex]) {
+      nextMembers[memberIndex] = {
+        ...nextMembers[memberIndex],
+        signatureUrl: undefined,
+      };
+      handleUpdateField('members', nextMembers);
+      showToast(`Đã xóa chữ ký của ${nextMembers[memberIndex].name}!`, 'info');
+    }
+    setPreviewSigningMemberIndex(null);
+  };
+
+  const handleExportBackup = () => {
+    try {
+      exportBackupToJson(reportsHistory);
+      showToast(`Đã xuất file sao lưu (${reportsHistory.length} biên bản) thành công!`, 'success');
+    } catch (e: any) {
+      showToast('Lỗi khi xuất dữ liệu sao lưu!', 'error');
+    }
+  };
+
+  const handleImportBackup = async (file: File) => {
+    if (userRole !== 'admin') {
+      showToast('Chỉ Quản trị viên (Admin) mới có quyền nhập và phục hồi dữ liệu!', 'error');
       setIsAdminAuthOpen(true);
       return;
     }
 
-    if (window.confirm('Bạn có muốn tạo một biên bản ATVSLĐ mới hoàn toàn không?')) {
-      const fresh = createNewReport();
-      setReport(fresh);
-      setActiveTab('edit');
-      showToast('Đã khởi tạo biên bản ATVSLĐ mới. Mời bạn soạn thảo thông tin.', 'info');
+    try {
+      showToast('Đang đọc và kiểm tra file sao lưu...', 'info');
+      const imported = await importBackupFromJson(file);
+      
+      // Merge with current history without duplicates
+      const merged = [...reportsHistory];
+      let addedCount = 0;
+      let updatedCount = 0;
+
+      imported.forEach((incoming) => {
+        const idx = merged.findIndex((m) => m.id === incoming.id || m.thang_nam === incoming.thang_nam);
+        if (idx >= 0) {
+          merged[idx] = incoming;
+          updatedCount++;
+        } else {
+          merged.unshift(incoming);
+          addedCount++;
+        }
+      });
+
+      setReportsHistory(merged);
+      if (imported.length > 0) {
+        setReport(imported[0]);
+      }
+      showToast(`Phục hồi thành công! Đã thêm ${addedCount} biên bản mới và cập nhật ${updatedCount} biên bản.`, 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Lỗi khi nhập file sao lưu!', 'error');
+    }
+  };
+
+  const handlePrintReport = () => {
+    if (activeTab === 'edit') {
+      setActiveTab('preview');
+      setTimeout(() => {
+        window.print();
+      }, 350);
+    } else {
+      window.print();
     }
   };
 
@@ -237,16 +343,37 @@ export default function App() {
 
   const handleDeleteReport = (id: string) => {
     if (userRole !== 'admin') {
-      showToast('Chỉ Quản trị viên (Admin) mới có quyền xóa biên bản!', 'error');
+      showToast('Chỉ Quản trị viên (Admin) mới có quyền xóa biên bản! Mời nhập mã PIN Admin.', 'error');
       setIsAdminAuthOpen(true);
       return;
     }
 
-    if (window.confirm('Bạn có chắc chắn muốn xóa biên bản này khỏi kho lưu trữ?')) {
-      const next = reportsHistory.filter((r) => r.id !== id);
-      setReportsHistory(next);
-      showToast('Đã xóa biên bản.', 'info');
+    const target = reportsHistory.find((r) => r.id === id);
+    if (target) {
+      setReportToDelete(target);
+    } else {
+      showToast('Không tìm thấy biên bản cần xóa.', 'error');
     }
+  };
+
+  const handleConfirmDeleteReport = (id: string) => {
+    const target = reportsHistory.find((r) => r.id === id);
+    const next = reportsHistory.filter((r) => r.id !== id);
+    setReportsHistory(next);
+
+    // If deleting the currently loaded report, fallback to another report or fresh one
+    if (report.id === id) {
+      if (next.length > 0) {
+        setReport(next[0]);
+      } else {
+        const fresh = createNewReport('07/2026');
+        setReport(fresh);
+        setReportsHistory([fresh]);
+      }
+    }
+
+    showToast(`Đã xóa biên bản Tháng ${target?.thang_nam || ''} thành công!`, 'info');
+    setReportToDelete(null);
   };
 
   const handleExportDocx = async (targetReport?: ReportData) => {
@@ -315,6 +442,7 @@ export default function App() {
         onExportDocx={() => handleExportDocx(report)}
         onOpenAdminAuth={() => setIsAdminAuthOpen(true)}
         onLogoutAdmin={handleLogoutAdmin}
+        onPrint={handlePrintReport}
         isSaving={isSaving}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -340,6 +468,8 @@ export default function App() {
             onExportDocx={handleExportDocx}
             onOpenAdminAuth={() => setIsAdminAuthOpen(true)}
             onCreateNewReport={handleNewReport}
+            onExportBackup={handleExportBackup}
+            onImportBackup={handleImportBackup}
           />
         )}
 
@@ -357,6 +487,7 @@ export default function App() {
               }
             }}
             isAdmin={userRole === 'admin'}
+            onSignMember={(idx) => setPreviewSigningMemberIndex(idx)}
           />
         )}
 
@@ -519,6 +650,29 @@ export default function App() {
         isOpen={isAdminAuthOpen}
         onClose={() => setIsAdminAuthOpen(false)}
         onSuccess={handleAdminAuthSuccess}
+      />
+
+      <NewReportModal
+        isOpen={isNewReportModalOpen}
+        onClose={() => setIsNewReportModalOpen(false)}
+        latestReport={reportsHistory.length > 0 ? reportsHistory[0] : report}
+        onConfirmCreate={handleConfirmCreateReport}
+      />
+
+      <SignatureModal
+        isOpen={previewSigningMemberIndex !== null}
+        onClose={() => setPreviewSigningMemberIndex(null)}
+        member={previewSigningMemberIndex !== null ? report.members[previewSigningMemberIndex] : null}
+        memberIndex={previewSigningMemberIndex}
+        onSaveSignature={handleSavePreviewSignature}
+        onRemoveSignature={handleRemovePreviewSignature}
+      />
+
+      <DeleteReportModal
+        isOpen={!!reportToDelete}
+        report={reportToDelete}
+        onClose={() => setReportToDelete(null)}
+        onConfirmDelete={handleConfirmDeleteReport}
       />
 
     </div>

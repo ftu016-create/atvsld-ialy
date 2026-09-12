@@ -12,7 +12,8 @@ import {
   KeyRound,
   Eye,
   Edit3,
-  Calendar
+  Calendar,
+  Printer
 } from 'lucide-react';
 import { ReportData, UserRole, ViewTab } from '../types';
 
@@ -29,6 +30,7 @@ interface HeaderProps {
   onExportDocx: () => void;
   onOpenAdminAuth: () => void;
   onLogoutAdmin: () => void;
+  onPrint?: () => void;
   isSaving: boolean;
   activeTab: ViewTab;
   setActiveTab: (tab: ViewTab) => void;
@@ -45,6 +47,7 @@ export const Header: React.FC<HeaderProps> = ({
   onExportDocx,
   onOpenAdminAuth,
   onLogoutAdmin,
+  onPrint,
   isSaving,
   activeTab,
   setActiveTab,
@@ -231,17 +234,30 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             )}
 
-            {/* Export Word (.docx): only shown when viewing or editing a single document */}
+            {/* Actions: Print / PDF & Export Word (.docx) */}
             {activeTab !== 'history' && (
-              <button
-                id="btn-header-export-docx"
-                onClick={onExportDocx}
-                title={`Xuất file Word (.docx) cho biên bản Tháng ${report.thang_nam}`}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-xl shadow-sm shadow-blue-500/25 transition whitespace-nowrap"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Xuất Word</span>
-              </button>
+              <>
+                <button
+                  id="btn-header-print-pdf"
+                  onClick={onPrint || (() => window.print())}
+                  title={`In hoặc Lưu PDF (khổ A4 Ngang) cho biên bản Tháng ${report.thang_nam}`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl transition whitespace-nowrap"
+                >
+                  <Printer className="w-3.5 h-3.5 text-slate-600" />
+                  <span className="hidden sm:inline">In / Xuất PDF</span>
+                  <span className="sm:hidden">In PDF</span>
+                </button>
+
+                <button
+                  id="btn-header-export-docx"
+                  onClick={onExportDocx}
+                  title={`Xuất file Word (.docx) cho biên bản Tháng ${report.thang_nam}`}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-xl shadow-sm shadow-blue-500/25 transition whitespace-nowrap"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Xuất Word</span>
+                </button>
+              </>
             )}
 
           </div>

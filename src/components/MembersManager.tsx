@@ -22,7 +22,7 @@ const COMMON_ROLES = [
 ];
 
 export const MembersManager: React.FC<MembersManagerProps> = ({ members, onChange }) => {
-  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
+  const [signingMemberIndex, setSigningMemberIndex] = useState<number | null>(null);
 
   const handleMemberChange = (index: number, field: keyof Member, value: string) => {
     const next = [...members];
@@ -87,20 +87,12 @@ export const MembersManager: React.FC<MembersManagerProps> = ({ members, onChang
               2. Thành phần đoàn kiểm tra (Mục A)
             </h2>
             <p className="text-xs text-slate-500">
-              Tổng số: {members.length} thành viên • Trưởng đoàn sẽ ký riêng ở cột phải
+              Tổng số: {members.length} thành viên • Nhấn biểu tượng <strong>"Ký"</strong> tương ứng trên từng người để ký trực tiếp hoặc tải ảnh
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setIsSignatureModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200/80 rounded-lg transition"
-          >
-            <span>✍️ Chèn chữ ký</span>
-          </button>
-
           <button
             id="btn-add-member"
             type="button"
@@ -174,16 +166,24 @@ export const MembersManager: React.FC<MembersManagerProps> = ({ members, onChang
                 </datalist>
               </div>
 
-              {/* Signature status / preview */}
+              {/* Signature status / preview with direct click-to-sign for this member */}
               {member.signatureUrl ? (
-                <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-50 border border-emerald-200 rounded-lg shrink-0">
-                  <img src={member.signatureUrl} alt="Chữ ký" className="h-6 max-w-[50px] object-contain" />
-                  <span className="text-[10px] font-semibold text-emerald-700">Đã ký</span>
+                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100/60 border border-emerald-200 rounded-lg shrink-0 transition">
+                  <button
+                    type="button"
+                    id={`btn-edit-signature-${idx}`}
+                    onClick={() => setSigningMemberIndex(idx)}
+                    className="flex items-center gap-1.5 text-left"
+                    title={`Chữ ký của ${member.name || `Thành viên ${idx + 1}`}. Nhấn để đổi chữ ký`}
+                  >
+                    <img src={member.signatureUrl} alt="Chữ ký" className="h-6 max-w-[55px] object-contain" />
+                    <span className="text-[10px] font-bold text-emerald-700">Đã ký</span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => handleRemoveSignature(idx)}
-                    className="text-slate-400 hover:text-red-500 text-xs ml-1"
-                    title="Xóa chữ ký"
+                    className="text-slate-400 hover:text-red-600 text-xs ml-1 p-0.5 hover:bg-white rounded transition"
+                    title="Xóa chữ ký này"
                   >
                     ×
                   </button>
@@ -191,11 +191,12 @@ export const MembersManager: React.FC<MembersManagerProps> = ({ members, onChang
               ) : (
                 <button
                   type="button"
-                  onClick={() => setIsSignatureModalOpen(true)}
-                  className="text-xs text-slate-400 hover:text-blue-600 flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-200/50 shrink-0"
-                  title="Thêm chữ ký cho thành viên này"
+                  id={`btn-sign-member-${idx}`}
+                  onClick={() => setSigningMemberIndex(idx)}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 active:bg-blue-200 border border-blue-200 rounded-lg transition shrink-0 shadow-2xs"
+                  title={`Chèn chữ ký điện tử cho ${member.name || `Thành viên ${idx + 1}`}`}
                 >
-                  <PenTool className="w-3 h-3" />
+                  <PenTool className="w-3 h-3 text-blue-600" />
                   <span>Ký</span>
                 </button>
               )}
@@ -215,10 +216,18 @@ export const MembersManager: React.FC<MembersManagerProps> = ({ members, onChang
       </div>
 
       <SignatureModal
-        isOpen={isSignatureModalOpen}
-        onClose={() => setIsSignatureModalOpen(false)}
-        members={members}
-        onSaveSignature={handleSaveSignature}
+        isOpen={signingMemberIndex !== null}
+        onClose={() => setSigningMemberIndex(null)}
+        member={signingMemberIndex !== null ? members[signingMemberIndex] : null}
+        memberIndex={signingMemberIndex}
+        onSaveSignature={(idx, url) => {
+          handleSaveSignature(idx, url);
+          setSigningMemberIndex(null);
+        }}
+        onRemoveSignature={(idx) => {
+          handleRemoveSignature(idx);
+          setSigningMemberIndex(null);
+        }}
       />
     </div>
   );

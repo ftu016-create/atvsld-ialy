@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, Printer, FileText, Layers, ArrowLeft, Edit3, ShieldCheck, Lock } from 'lucide-react';
+import { Download, Printer, FileText, Layers, ArrowLeft, Edit3, ShieldCheck, Lock, PenTool } from 'lucide-react';
 import { ReportData } from '../types';
 
 interface LiveDocumentPreviewProps {
@@ -8,6 +8,7 @@ interface LiveDocumentPreviewProps {
   onBackToHistory?: () => void;
   onEditThisReport?: () => void;
   isAdmin?: boolean;
+  onSignMember?: (memberIndex: number) => void;
 }
 
 export const LiveDocumentPreview: React.FC<LiveDocumentPreviewProps> = ({ 
@@ -16,6 +17,7 @@ export const LiveDocumentPreview: React.FC<LiveDocumentPreviewProps> = ({
   onBackToHistory,
   onEditThisReport,
   isAdmin = false,
+  onSignMember,
 }) => {
   const leader = report.members.find((m) => m.role.toLowerCase().includes('trưởng đoàn')) || report.members[0];
   const otherMembers = report.members.filter((m) => m !== leader);
@@ -76,11 +78,13 @@ export const LiveDocumentPreview: React.FC<LiveDocumentPreviewProps> = ({
           )}
 
           <button
+            id="btn-preview-print"
             onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition"
+            title="In trực tiếp hoặc Lưu dưới dạng PDF khổ A4 Ngang"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition"
           >
-            <Printer className="w-4 h-4" />
-            <span>In A4</span>
+            <Printer className="w-4 h-4 text-slate-600" />
+            <span>In / Lưu PDF</span>
           </button>
 
           <button
@@ -220,20 +224,36 @@ export const LiveDocumentPreview: React.FC<LiveDocumentPreviewProps> = ({
               CÁC THÀNH VIÊN ĐOÀN KIỂM TRA
             </p>
             <div className="grid grid-cols-2 gap-4 text-[12px] sm:text-[13px]">
-              {otherMembers.map((m, i) => (
-                <div key={i} className="pb-4 text-left pl-2">
-                  <p className="font-medium">{i + 1}. Ông: {m.name}</p>
-                  {m.signatureUrl ? (
-                    <img src={m.signatureUrl} alt="Chữ ký" className="h-10 my-1 object-contain" />
-                  ) : (
-                    <p className="italic text-slate-400 text-[11px] mt-4">(Ký tên)</p>
-                  )}
-                </div>
-              ))}
+              {otherMembers.map((m, i) => {
+                const memberRealIndex = report.members.findIndex((x) => x === m);
+                return (
+                  <div key={i} className="pb-4 text-left pl-2 group">
+                    <p className="font-medium">{i + 1}. Ông: {m.name}</p>
+                    {m.signatureUrl ? (
+                      <div 
+                        onClick={() => isAdmin && onSignMember && memberRealIndex >= 0 && onSignMember(memberRealIndex)}
+                        className={`h-12 flex items-center ${isAdmin ? 'cursor-pointer hover:opacity-80' : ''}`}
+                        title={isAdmin ? 'Bấm để đổi hoặc xóa chữ ký' : undefined}
+                      >
+                        <img src={m.signatureUrl} alt={`Chữ ký ${m.name}`} className="h-10 my-1 object-contain" />
+                      </div>
+                    ) : (
+                      <div 
+                        onClick={() => isAdmin && onSignMember && memberRealIndex >= 0 && onSignMember(memberRealIndex)}
+                        className={`mt-4 ${isAdmin ? 'cursor-pointer inline-flex items-center gap-1 text-blue-600 hover:text-blue-800' : 'text-slate-400'}`}
+                        title={isAdmin ? `Bấm để chèn chữ ký cho ${m.name}` : undefined}
+                      >
+                        {isAdmin && <PenTool className="w-3 h-3 text-blue-500 opacity-70 group-hover:opacity-100" />}
+                        <span className="italic text-[11px]">(Ký tên)</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          <div className="sm:col-span-5">
+          <div className="sm:col-span-5 group">
             <p className="font-bold uppercase text-[13px] sm:text-[14px]">
               TRƯỞNG ĐOÀN KIỂM TRA
             </p>
@@ -241,12 +261,33 @@ export const LiveDocumentPreview: React.FC<LiveDocumentPreviewProps> = ({
               (Ký và ghi rõ họ tên)
             </p>
             {leader?.signatureUrl ? (
-              <div className="h-20 flex items-center justify-center my-1">
+              <div 
+                onClick={() => {
+                  if (isAdmin && onSignMember) {
+                    const leaderRealIndex = report.members.findIndex((x) => x === leader);
+                    if (leaderRealIndex >= 0) onSignMember(leaderRealIndex);
+                  }
+                }}
+                className={`h-20 flex items-center justify-center my-1 ${isAdmin ? 'cursor-pointer hover:opacity-80' : ''}`}
+                title={isAdmin ? 'Bấm để đổi hoặc xóa chữ ký Trưởng đoàn' : undefined}
+              >
                 <img src={leader.signatureUrl} alt="Chữ ký Trưởng đoàn" className="h-16 object-contain" />
               </div>
             ) : (
-              <div className="h-20 flex items-center justify-center italic text-slate-400 text-xs">
-                (Ký tên)
+              <div 
+                onClick={() => {
+                  if (isAdmin && onSignMember) {
+                    const leaderRealIndex = report.members.findIndex((x) => x === leader);
+                    if (leaderRealIndex >= 0) onSignMember(leaderRealIndex);
+                  }
+                }}
+                className={`h-20 flex items-center justify-center italic text-xs ${
+                  isAdmin ? 'cursor-pointer text-blue-600 hover:text-blue-800 gap-1' : 'text-slate-400'
+                }`}
+                title={isAdmin ? `Bấm để chèn chữ ký cho Trưởng đoàn (${leader?.name})` : undefined}
+              >
+                {isAdmin && <PenTool className="w-3.5 h-3.5 text-blue-500 opacity-70 group-hover:opacity-100" />}
+                <span>(Ký tên)</span>
               </div>
             )}
             <p className="font-bold text-[13px] sm:text-[14px]">
