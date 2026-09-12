@@ -61,13 +61,6 @@ export const LiveDocumentPreview: React.FC<LiveDocumentPreviewProps> = ({
             <Layers className="w-3 h-3" />
             297mm × 210mm
           </span>
-
-          {!isAdmin && (
-            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
-              <Lock className="w-3 h-3 text-slate-400" />
-              Chế độ xem đồng nghiệp
-            </span>
-          )}
         </div>
 
         <div className="flex items-center gap-2">

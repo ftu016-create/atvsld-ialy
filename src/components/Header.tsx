@@ -109,16 +109,18 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 Xem chi tiết
               </button>
-              <button
-                id="btn-mobile-edit-tab"
-                onClick={() => handleTabClick('edit')}
-                className={`px-2 py-1 font-medium rounded-md transition flex items-center gap-1 ${
-                  activeTab === 'edit' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-600'
-                }`}
-              >
-                {!isAdmin && <Lock className="w-3 h-3 text-slate-400" />}
-                <span>Soạn thảo</span>
-              </button>
+              {isAdmin && (
+                <button
+                  id="btn-mobile-edit-tab"
+                  onClick={() => handleTabClick('edit')}
+                  className={`px-2 py-1 font-medium rounded-md transition flex items-center gap-1 ${
+                    activeTab === 'edit' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-600'
+                  }`}
+                >
+                  <Edit3 className="w-3 h-3 text-blue-600" />
+                  <span>Soạn thảo</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -150,28 +152,21 @@ export const Header: React.FC<HeaderProps> = ({
               <span>Xem văn bản chi tiết</span>
             </button>
 
-            <button
-              id="btn-desktop-edit-tab"
-              onClick={() => handleTabClick('edit')}
-              title={isAdmin ? "Vào giao diện soạn thảo" : "Chỉ Admin mới có quyền soạn thảo"}
-              className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition flex items-center gap-1.5 ${
-                activeTab === 'edit' 
-                  ? 'bg-white text-blue-700 shadow-xs' 
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              {isAdmin ? (
+            {isAdmin && (
+              <button
+                id="btn-desktop-edit-tab"
+                onClick={() => handleTabClick('edit')}
+                title="Vào giao diện soạn thảo & sửa đổi"
+                className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition flex items-center gap-1.5 ${
+                  activeTab === 'edit' 
+                    ? 'bg-white text-blue-700 shadow-xs' 
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
                 <Edit3 className="w-3.5 h-3.5 text-blue-600" />
-              ) : (
-                <Lock className="w-3.5 h-3.5 text-slate-400" />
-              )}
-              <span>Soạn thảo biểu mẫu</span>
-              {!isAdmin && (
-                <span className="text-[10px] px-1.5 py-0.2 bg-slate-200 text-slate-600 rounded">
-                  Admin
-                </span>
-              )}
-            </button>
+                <span>Soạn thảo biểu mẫu</span>
+              </button>
+            )}
           </div>
 
           {/* Right Action Bar with User Role & Functional Buttons */}

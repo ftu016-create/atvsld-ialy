@@ -336,12 +336,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                  ) : (
-                    <div className="text-[11px] text-slate-400 italic pr-1 flex items-center gap-1">
-                      <Lock className="w-3 h-3" />
-                      <span>Chỉ xem</span>
-                    </div>
-                  )}
+                  ) : null}
 
                 </div>
 
@@ -352,21 +347,11 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
       )}
 
       {/* Info footer banner */}
-      <div className="p-4 rounded-2xl bg-blue-50/70 border border-blue-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-blue-900">
-        <div className="flex items-center gap-2.5">
-          <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
-          <span>
-            Đồng nghiệp có thể bấm <strong>"Xem chi tiết"</strong> để xem văn bản theo mẫu in chuẩn A4 ngang hoặc bấm biểu tượng tải về để nhận file Word (.docx).
-          </span>
-        </div>
-        {!isAdmin && (
-          <button
-            onClick={onOpenAdminAuth}
-            className="text-blue-700 hover:text-blue-900 font-bold underline whitespace-nowrap"
-          >
-            Đăng nhập Quản trị viên
-          </button>
-        )}
+      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center gap-2.5 text-xs text-slate-600">
+        <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
+        <span>
+          Bấm <strong>"Xem chi tiết"</strong> để xem văn bản mẫu A4 hoàn chỉnh hoặc bấm <strong>"Xuất Word"</strong> để tải file (.docx).
+        </span>
       </div>
 
     </div>
