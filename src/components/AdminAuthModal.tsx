@@ -30,6 +30,16 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
   useEffect(() => {
     if (!isOpen) return;
 
+    // Reset sạch các trường nhập liệu khi mở modal để không lưu vết
+    setPin('');
+    setShowPin(false);
+    setError('');
+    setSuccessMsg('');
+    setIsChangingPin(false);
+    setOldPin('');
+    setNewPin('');
+    setConfirmNewPin('');
+
     // Lấy mã mới nhất ngay khi mở
     getSharedAdminPin().then((p) => {
       if (p) setCurrentPin(p);
@@ -45,8 +55,14 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (e?: React.FormEvent | React.KeyboardEvent) => {
+    if (e && 'preventDefault' in e) {
+      e.preventDefault();
+    }
+    if (!pin.trim()) {
+      setError('Vui lòng nhập mã PIN Admin.');
+      return;
+    }
     setIsLoading(true);
 
     try {
@@ -84,8 +100,10 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
     }
   };
 
-  const handleChangePinSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleChangePinSubmit = async (e?: React.FormEvent | React.KeyboardEvent) => {
+    if (e && 'preventDefault' in e) {
+      e.preventDefault();
+    }
     setError('');
 
     if (!oldPin) {
@@ -177,7 +195,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
           )}
 
           {!isChangingPin ? (
-            <form onSubmit={handleLogin} className="space-y-4" autoComplete="off">
+            <div className="space-y-4">
               <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 text-xs text-slate-600 leading-relaxed">
                 <p className="font-semibold text-slate-800 flex items-center gap-1.5 mb-1">
                   <Lock className="w-3.5 h-3.5 text-blue-600" />
@@ -199,18 +217,32 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
                 <div className="relative">
                   <input
                     id="input-admin-pin"
-                    type={showPin ? 'text' : 'password'}
+                    name="admin_system_code_entry"
+                    type="text"
+                    inputMode="text"
                     value={pin}
                     onChange={(e) => {
                       setPin(e.target.value);
                       if (error) setError('');
                     }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleLogin();
+                      }
+                    }}
+                    style={{
+                      WebkitTextSecurity: showPin ? 'none' : 'disc',
+                    }}
                     placeholder=""
-                    autoComplete="new-password"
+                    autoComplete="off"
                     autoCorrect="off"
                     autoCapitalize="off"
-                    spellCheck="false"
+                    spellCheck={false}
+                    aria-autocomplete="none"
                     data-lpignore="true"
+                    data-1p-ignore="true"
+                    data-bwignore="true"
                     data-form-type="other"
                     autoFocus
                     className="w-full px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden font-mono tracking-wider transition"
@@ -250,7 +282,8 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
                   </button>
                   <button
                     id="btn-confirm-admin-login"
-                    type="submit"
+                    type="button"
+                    onClick={() => handleLogin()}
                     disabled={isLoading}
                     className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-xl shadow-md shadow-blue-500/20 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
@@ -259,9 +292,9 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
                   </button>
                 </div>
               </div>
-            </form>
+            </div>
           ) : (
-            <form onSubmit={handleChangePinSubmit} className="space-y-3" autoComplete="off">
+            <div className="space-y-3">
               <div className="text-xs text-slate-600 mb-2">
                 Để đổi mã PIN, vui lòng xác nhận mã PIN hiện tại trước:
               </div>
@@ -269,18 +302,24 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Mã PIN cũ (hiện tại):</label>
                 <input
-                  type="password"
+                  name="old_sec_key_val"
+                  type="text"
                   value={oldPin}
                   onChange={(e) => {
                     setOldPin(e.target.value);
                     if (error) setError('');
                   }}
+                  style={{ WebkitTextSecurity: 'disc' }}
                   placeholder=""
-                  autoComplete="new-password"
+                  autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="off"
-                  spellCheck="false"
+                  spellCheck={false}
+                  aria-autocomplete="none"
                   data-lpignore="true"
+                  data-1p-ignore="true"
+                  data-bwignore="true"
+                  data-form-type="other"
                   autoFocus
                   className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden font-mono tracking-wider"
                 />
@@ -289,18 +328,24 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Mã PIN mới:</label>
                 <input
-                  type="password"
+                  name="new_sec_key_val"
+                  type="text"
                   value={newPin}
                   onChange={(e) => {
                     setNewPin(e.target.value);
                     if (error) setError('');
                   }}
+                  style={{ WebkitTextSecurity: 'disc' }}
                   placeholder=""
-                  autoComplete="new-password"
+                  autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="off"
-                  spellCheck="false"
+                  spellCheck={false}
+                  aria-autocomplete="none"
                   data-lpignore="true"
+                  data-1p-ignore="true"
+                  data-bwignore="true"
+                  data-form-type="other"
                   className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden font-mono tracking-wider"
                 />
               </div>
@@ -308,18 +353,30 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Nhập lại mã PIN mới:</label>
                 <input
-                  type="password"
+                  name="confirm_sec_key_val"
+                  type="text"
                   value={confirmNewPin}
                   onChange={(e) => {
                     setConfirmNewPin(e.target.value);
                     if (error) setError('');
                   }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleChangePinSubmit();
+                    }
+                  }}
+                  style={{ WebkitTextSecurity: 'disc' }}
                   placeholder=""
-                  autoComplete="new-password"
+                  autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="off"
-                  spellCheck="false"
+                  spellCheck={false}
+                  aria-autocomplete="none"
                   data-lpignore="true"
+                  data-1p-ignore="true"
+                  data-bwignore="true"
+                  data-form-type="other"
                   className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden font-mono tracking-wider"
                 />
               </div>
@@ -339,7 +396,8 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
                   Quay lại
                 </button>
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={() => handleChangePinSubmit()}
                   disabled={isLoading}
                   className="px-4 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition shadow-xs cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                 >
@@ -347,7 +405,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
                   <span>Xác nhận đổi PIN</span>
                 </button>
               </div>
-            </form>
+            </div>
           )}
 
         </div>
