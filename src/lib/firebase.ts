@@ -41,22 +41,40 @@ testConnection();
 
 /**
  * Lấy mã PIN Admin được đồng bộ từ Firestore.
- * Nếu chưa có hoặc mất mạng, tự động dùng mã lưu trong bộ nhớ máy / mã mặc định.
+ * Luôn ưu tiên đọc trực tiếp từ server để mọi máy nhận ngay mã PIN mới nhất vừa đổi.
  */
 export async function getSharedAdminPin(): Promise<string> {
+  const docRef = doc(db, 'app_settings', 'system_config');
+  
+  // 1. Thử lấy trực tiếp từ server để không bị dính cache cũ trên máy khác
   try {
-    const docRef = doc(db, 'app_settings', 'system_config');
+    const serverSnap = await getDocFromServer(docRef);
+    if (serverSnap.exists() && serverSnap.data()?.adminPin) {
+      const pin = String(serverSnap.data().adminPin).trim();
+      try {
+        localStorage.setItem('atvsld_admin_pin_v1', pin);
+      } catch (_) {}
+      return pin;
+    }
+  } catch (serverErr) {
+    console.warn('Không thể lấy trực tiếp từ server, thử cache Firestore:', serverErr);
+  }
+
+  // 2. Thử getDoc bình thường (bao gồm offline cache của SDK)
+  try {
     const snap = await getDoc(docRef);
     if (snap.exists() && snap.data()?.adminPin) {
-      const pin = snap.data().adminPin as string;
+      const pin = String(snap.data().adminPin).trim();
       try {
         localStorage.setItem('atvsld_admin_pin_v1', pin);
       } catch (_) {}
       return pin;
     }
   } catch (err) {
-    console.warn('Chưa lấy được PIN từ Firestore, dùng bộ nhớ cục bộ:', err);
+    console.warn('Chưa lấy được PIN từ Firestore:', err);
   }
+
+  // 3. Fallback bộ nhớ máy hoặc mã mặc định
   return localStorage.getItem('atvsld_admin_pin_v1') || DEFAULT_ADMIN_PIN;
 }
 
@@ -64,8 +82,9 @@ export async function getSharedAdminPin(): Promise<string> {
  * Cập nhật mã PIN Admin đồng bộ lên đám mây Firestore cho tất cả các máy.
  */
 export async function setSharedAdminPin(newPin: string): Promise<void> {
+  const cleanPin = newPin.trim();
   try {
-    localStorage.setItem('atvsld_admin_pin_v1', newPin);
+    localStorage.setItem('atvsld_admin_pin_v1', cleanPin);
   } catch (_) {}
 
   try {
@@ -73,7 +92,7 @@ export async function setSharedAdminPin(newPin: string): Promise<void> {
     await setDoc(
       docRef,
       {
-        adminPin: newPin,
+        adminPin: cleanPin,
         updatedAt: new Date().toISOString()
       },
       { merge: true }
@@ -85,16 +104,17 @@ export async function setSharedAdminPin(newPin: string): Promise<void> {
 }
 
 /**
- * Lắng nghe thay đổi mã PIN Admin theo thời gian thực (real-time)
+ * Lắng nghe thay đổi mã PIN Admin theo thời gian thực (real-time) cho tất cả các máy
  */
 export function subscribeToSharedAdminPin(onPinChange: (pin: string) => void): () => void {
   try {
     const docRef = doc(db, 'app_settings', 'system_config');
     const unsubscribe = onSnapshot(
       docRef,
+      { includeMetadataChanges: false },
       (snap) => {
         if (snap.exists() && snap.data()?.adminPin) {
-          const pin = snap.data().adminPin as string;
+          const pin = String(snap.data().adminPin).trim();
           try {
             localStorage.setItem('atvsld_admin_pin_v1', pin);
           } catch (_) {}
@@ -102,7 +122,7 @@ export function subscribeToSharedAdminPin(onPinChange: (pin: string) => void): (
         }
       },
       (err) => {
-        console.warn('Lỗi kết nối theo dõi mã PIN:', err);
+        console.warn('Lỗi kết nối theo dõi mã PIN real-time:', err);
       }
     );
     return unsubscribe;

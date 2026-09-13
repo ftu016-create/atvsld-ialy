@@ -45,7 +45,8 @@ import { DeleteReportModal } from './components/DeleteReportModal';
 import { 
   fetchAllSharedReports, 
   saveReportToFirestore, 
-  deleteReportFromFirestore 
+  deleteReportFromFirestore,
+  subscribeToSharedAdminPin
 } from './lib/firebase';
 
 const STORAGE_KEY = 'atvsld_ialy_reports_v2';
@@ -137,6 +138,15 @@ export default function App() {
         } catch (_) {}
       }
     });
+
+    // Lắng nghe cập nhật mã PIN Admin thời gian thực trên Firestore cho tất cả các máy
+    const unsubPin = subscribeToSharedAdminPin((newPin) => {
+      console.log('Mã PIN Admin được đồng bộ mới từ Firestore:', newPin);
+    });
+
+    return () => {
+      unsubPin();
+    };
   }, []);
 
   // Sync userRole to localStorage
