@@ -42,6 +42,11 @@ import { AdminAuthModal } from './components/AdminAuthModal';
 import { NewReportModal } from './components/NewReportModal';
 import { SignatureModal } from './components/SignatureModal';
 import { DeleteReportModal } from './components/DeleteReportModal';
+import { 
+  fetchAllSharedReports, 
+  saveReportToFirestore, 
+  deleteReportFromFirestore 
+} from './lib/firebase';
 
 const STORAGE_KEY = 'atvsld_ialy_reports_v2';
 const CURRENT_REPORT_KEY = 'atvsld_ialy_current_v2';
@@ -107,10 +112,31 @@ export default function App() {
   const [previewSigningMemberIndex, setPreviewSigningMemberIndex] = useState<number | null>(null);
   const [reportToDelete, setReportToDelete] = useState<ReportData | null>(null);
 
-  // Auto-repair any misplaced Group 7 rows that were saved in localStorage
+  // Auto-repair any misplaced Group 7 rows that were saved in localStorage and sync with Firestore
   useEffect(() => {
     setReport((curr) => sanitizeReportGroups(curr));
     setReportsHistory((prevList) => prevList.map((r) => sanitizeReportGroups(r)));
+
+    // Đồng bộ biên bản từ cơ sở dữ liệu đám mây Firestore dùng chung cho mọi máy
+    fetchAllSharedReports().then((remoteReports) => {
+      if (remoteReports && remoteReports.length > 0) {
+        setReportsHistory((prev) => {
+          const merged = [...remoteReports];
+          prev.forEach((p) => {
+            if (!merged.some((m) => m.id === p.id || m.thang_nam === p.thang_nam)) {
+              merged.push(p);
+            }
+          });
+          return merged.map((r) => sanitizeReportGroups(r));
+        });
+      } else {
+        // Nếu đám mây chưa có dữ liệu lần đầu, tự động tải các biên bản mẫu lên
+        try {
+          const initial = createInitialReportsList().map((r) => sanitizeReportGroups(r));
+          initial.forEach((item) => saveReportToFirestore(item));
+        } catch (_) {}
+      }
+    });
   }, []);
 
   // Sync userRole to localStorage
@@ -184,6 +210,9 @@ export default function App() {
     }
     setReportsHistory(nextHistory);
 
+    // Đồng bộ tức thì lên cơ sở dữ liệu đám mây dùng chung
+    saveReportToFirestore(updated);
+
     setTimeout(() => {
       setIsSaving(false);
       showToast(`Đã lưu biên bản tháng ${updated.thang_nam} vào kho lưu trữ!`, 'success');
@@ -202,6 +231,7 @@ export default function App() {
   const handleConfirmCreateReport = (newReport: ReportData, transferredCount: number) => {
     setReport(newReport);
     setReportsHistory([newReport, ...reportsHistory]);
+    saveReportToFirestore(newReport);
     setActiveTab('edit');
     if (transferredCount > 0) {
       showToast(`Đã tạo Tháng ${newReport.thang_nam} và tự động chuyển tiếp ${transferredCount} tồn tại sang Mục 7!`, 'success');
@@ -336,6 +366,7 @@ export default function App() {
     };
     setReport(clone);
     setReportsHistory([clone, ...reportsHistory]);
+    saveReportToFirestore(clone);
     setIsHistoryModalOpen(false);
     setActiveTab('edit');
     showToast(`Đã nhân bản biên bản sang bản sao mới để soạn thảo!`, 'success');
@@ -360,6 +391,7 @@ export default function App() {
     const target = reportsHistory.find((r) => r.id === id);
     const next = reportsHistory.filter((r) => r.id !== id);
     setReportsHistory(next);
+    deleteReportFromFirestore(id);
 
     // If deleting the currently loaded report, fallback to another report or fresh one
     if (report.id === id) {

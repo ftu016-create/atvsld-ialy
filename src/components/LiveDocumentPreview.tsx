@@ -30,11 +30,10 @@ export const LiveDocumentPreview: React.FC<LiveDocumentPreviewProps> = ({
   const yearNum = dateParts[2] || (thang.split('/')[1] || '2026');
   const thangFormatted = thang.includes('/') ? `${parseInt(thang.split('/')[0], 10)}/${thang.split('/')[1]}` : thang;
 
-  const maxStt = Math.max(
-    1,
-    ...report.images.map((img) => img.stt || 1),
-    3
-  );
+  const validImages = (report.images || []).filter((img) => Boolean(img && img.dataUrl && img.dataUrl.trim()));
+  const activeStts: number[] = Array.from(
+    new Set<number>(validImages.map((img) => Number(img.stt) || 1))
+  ).sort((a: number, b: number) => a - b);
 
   return (
     <div className="space-y-4">
@@ -297,66 +296,64 @@ export const LiveDocumentPreview: React.FC<LiveDocumentPreviewProps> = ({
         </div>
 
         {/* Phụ lục hình ảnh khổ ngang */}
-        <div className="mt-14 pt-10 border-t-2 border-dashed border-slate-300">
-          <h2 className="text-center font-bold uppercase text-sm sm:text-base mb-6">
-            PHỤ LỤC: CÁC HÌNH ẢNH KIỂM TRA THỰC TẾ THÁNG {thangFormatted}
-          </h2>
+        {activeStts.length > 0 && (
+          <div className="mt-14 pt-10 border-t-2 border-dashed border-slate-300">
+            <h2 className="text-center font-bold uppercase text-sm sm:text-base mb-6">
+              PHỤ LỤC: CÁC HÌNH ẢNH KIỂM TRA THỰC TẾ THÁNG {thangFormatted}
+            </h2>
 
-          <div className="border border-slate-900">
-            <table className="w-full border-collapse text-[13px]">
-              <thead>
-                <tr className="bg-slate-100 border-b border-slate-900 text-center font-bold">
-                  <th className="border-r border-slate-900 p-2.5 w-10">STT</th>
-                  <th className="border-r border-slate-900 p-2.5 w-1/2">Hình ảnh hiện trường NMTĐ Ialy</th>
-                  <th className="border-r border-slate-900 p-2.5 w-10">STT</th>
-                  <th className="p-2.5 w-1/2">Hình ảnh hiện trường NMTĐ Ialy MR</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Array.from({ length: maxStt }).map((_, i) => {
-                  const stt = i + 1;
-                  const imgST = report.images.find((x) => x.stt === stt && x.side === 'ST');
-                  const imgMR = report.images.find((x) => x.stt === stt && x.side === 'MR');
+            <div className="border border-slate-900">
+              <table className="w-full border-collapse text-[13px]">
+                <thead>
+                  <tr className="bg-slate-100 border-b border-slate-900 text-center font-bold">
+                    <th className="border-r border-slate-900 p-2.5 w-10">STT</th>
+                    <th className="border-r border-slate-900 p-2.5 w-1/2">Hình ảnh hiện trường NMTĐ Ialy</th>
+                    <th className="border-r border-slate-900 p-2.5 w-10">STT</th>
+                    <th className="p-2.5 w-1/2">Hình ảnh hiện trường NMTĐ Ialy MR</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeStts.map((stt, idx) => {
+                    const displayNum = idx + 1;
+                    const imgST = validImages.find((x) => x.stt === stt && x.side === 'ST');
+                    const imgMR = validImages.find((x) => x.stt === stt && x.side === 'MR');
 
-                  return (
-                    <React.Fragment key={stt}>
-                      {/* Caption row */}
-                      <tr className="bg-slate-50/70 border-b border-slate-300 font-medium text-[12px]">
-                        <td className="border-r border-slate-900 p-1.5 text-center font-bold">{stt}</td>
-                        <td className="border-r border-slate-900 p-1.5 italic text-slate-700">
-                          {imgST?.caption || `Vị trí kiểm tra ${stt} - NMTĐ Ialy`}
-                        </td>
-                        <td className="border-r border-slate-900 p-1.5 text-center font-bold">{stt}</td>
-                        <td className="p-1.5 italic text-slate-700">
-                          {imgMR?.caption || `Vị trí kiểm tra ${stt} - NMTĐ Ialy Mở Rộng`}
-                        </td>
-                      </tr>
-                      {/* Image row */}
-                      <tr className="border-b border-slate-900">
-                        <td className="border-r border-slate-900 p-1"></td>
-                        <td className="border-r border-slate-900 p-3 text-center">
-                          {imgST?.dataUrl ? (
-                            <img src={imgST.dataUrl} alt="NMTĐ Ialy" className="max-h-56 mx-auto rounded object-cover border border-slate-200" />
-                          ) : (
-                            <span className="text-slate-400 italic text-xs">(Chưa có ảnh)</span>
-                          )}
-                        </td>
-                        <td className="border-r border-slate-900 p-1"></td>
-                        <td className="p-3 text-center">
-                          {imgMR?.dataUrl ? (
-                            <img src={imgMR.dataUrl} alt="NMTĐ Ialy Mở Rộng" className="max-h-56 mx-auto rounded object-cover border border-slate-200" />
-                          ) : (
-                            <span className="text-slate-400 italic text-xs">(Chưa có ảnh)</span>
-                          )}
-                        </td>
-                      </tr>
-                    </React.Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
+                    return (
+                      <React.Fragment key={stt}>
+                        {/* Caption row */}
+                        <tr className="bg-slate-50/70 border-b border-slate-300 font-medium text-[12px]">
+                          <td className="border-r border-slate-900 p-1.5 text-center font-bold">{displayNum}</td>
+                          <td className="border-r border-slate-900 p-1.5 italic text-slate-700">
+                            {imgST ? (imgST.caption || `Vị trí kiểm tra ${displayNum} - NMTĐ Ialy`) : ''}
+                          </td>
+                          <td className="border-r border-slate-900 p-1.5 text-center font-bold">{displayNum}</td>
+                          <td className="p-1.5 italic text-slate-700">
+                            {imgMR ? (imgMR.caption || `Vị trí kiểm tra ${displayNum} - NMTĐ Ialy Mở Rộng`) : ''}
+                          </td>
+                        </tr>
+                        {/* Image row */}
+                        <tr className="border-b border-slate-900">
+                          <td className="border-r border-slate-900 p-1"></td>
+                          <td className="border-r border-slate-900 p-3 text-center">
+                            {imgST?.dataUrl ? (
+                              <img src={imgST.dataUrl} alt="NMTĐ Ialy" className="max-h-56 mx-auto rounded object-cover border border-slate-200" />
+                            ) : null}
+                          </td>
+                          <td className="border-r border-slate-900 p-1"></td>
+                          <td className="p-3 text-center">
+                            {imgMR?.dataUrl ? (
+                              <img src={imgMR.dataUrl} alt="NMTĐ Ialy Mở Rộng" className="max-h-56 mx-auto rounded object-cover border border-slate-200" />
+                            ) : null}
+                          </td>
+                        </tr>
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
 
       </div>
     </div>

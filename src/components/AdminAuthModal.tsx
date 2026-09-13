@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { ShieldCheck, Lock, KeyRound, AlertCircle, X, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ShieldCheck, Lock, KeyRound, AlertCircle, X, CheckCircle2, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { getSharedAdminPin, setSharedAdminPin, subscribeToSharedAdminPin, DEFAULT_ADMIN_PIN } from '../lib/firebase';
 
 interface AdminAuthModalProps {
   isOpen: boolean;
@@ -7,8 +8,7 @@ interface AdminAuthModalProps {
   onSuccess: () => void;
 }
 
-const PIN_STORAGE_KEY = 'atvsld_admin_pin_v1';
-export const DEFAULT_ADMIN_PIN = 'ialy2026';
+export { DEFAULT_ADMIN_PIN };
 
 export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
   isOpen,
@@ -22,64 +22,113 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
   const [oldPin, setOldPin] = useState('');
   const [newPin, setNewPin] = useState('');
   const [confirmNewPin, setConfirmNewPin] = useState('');
-  const [showChangePin, setShowChangePin] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentPin, setCurrentPin] = useState<string>(DEFAULT_ADMIN_PIN);
+
+  // Lấy mã PIN từ đám mây khi mở modal hoặc có thay đổi
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // Lấy mã mới nhất ngay khi mở
+    getSharedAdminPin().then((p) => {
+      if (p) setCurrentPin(p);
+    });
+
+    // Lắng nghe cập nhật mã PIN nếu có máy khác vừa đổi
+    const unsubscribe = subscribeToSharedAdminPin((newRemotePin) => {
+      if (newRemotePin) setCurrentPin(newRemotePin);
+    });
+
+    return () => unsubscribe();
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const getSavedPin = () => {
-    return localStorage.getItem(PIN_STORAGE_KEY) || DEFAULT_ADMIN_PIN;
-  };
-
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const correctPin = getSavedPin();
+    setIsLoading(true);
 
-    if (pin === correctPin) {
-      setError('');
-      setSuccessMsg('Xác thực Admin thành công!');
-      setTimeout(() => {
-        setSuccessMsg('');
-        setPin('');
-        onSuccess();
-      }, 400);
-    } else {
-      setError('Mã PIN không chính xác. Vui lòng kiểm tra lại.');
+    try {
+      // Xác nhận lại với PIN đám mây mới nhất
+      const latestPin = await getSharedAdminPin();
+      const activePin = latestPin || currentPin;
+
+      if (pin.trim() === activePin.trim()) {
+        setError('');
+        setSuccessMsg('Xác thực Admin thành công!');
+        setTimeout(() => {
+          setSuccessMsg('');
+          setPin('');
+          setIsLoading(false);
+          onSuccess();
+        }, 400);
+      } else {
+        setIsLoading(false);
+        setError('Mã PIN không chính xác. Vui lòng kiểm tra lại.');
+      }
+    } catch {
+      setIsLoading(false);
+      // Fallback kiểm tra với mã hiện tại
+      if (pin.trim() === currentPin.trim()) {
+        setError('');
+        setSuccessMsg('Xác thực Admin thành công!');
+        setTimeout(() => {
+          setSuccessMsg('');
+          setPin('');
+          onSuccess();
+        }, 400);
+      } else {
+        setError('Mã PIN không chính xác. Vui lòng kiểm tra lại.');
+      }
     }
   };
 
-  const handleChangePinSubmit = (e: React.FormEvent) => {
+  const handleChangePinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const correctPin = getSavedPin();
+    setError('');
 
     if (!oldPin) {
       setError('Vui lòng nhập mã PIN cũ hiện tại.');
       return;
     }
-    if (oldPin !== correctPin) {
+
+    const latestPin = await getSharedAdminPin();
+    const activePin = latestPin || currentPin;
+
+    if (oldPin.trim() !== activePin.trim()) {
       setError('Mã PIN cũ không chính xác. Bạn không có quyền đổi mã PIN.');
       return;
     }
-    if (newPin.length < 4) {
+    if (newPin.trim().length < 4) {
       setError('Mã PIN mới phải từ 4 ký tự trở lên.');
       return;
     }
-    if (newPin === oldPin) {
+    if (newPin.trim() === oldPin.trim()) {
       setError('Mã PIN mới không được trùng với mã PIN cũ.');
       return;
     }
-    if (newPin !== confirmNewPin) {
+    if (newPin.trim() !== confirmNewPin.trim()) {
       setError('Xác nhận mã PIN mới không khớp.');
       return;
     }
 
-    localStorage.setItem(PIN_STORAGE_KEY, newPin);
-    setSuccessMsg('Đã đổi mã PIN Admin thành công!');
-    setIsChangingPin(false);
-    setOldPin('');
-    setNewPin('');
-    setConfirmNewPin('');
-    setError('');
+    setIsLoading(true);
+    try {
+      await setSharedAdminPin(newPin.trim());
+      setCurrentPin(newPin.trim());
+      setSuccessMsg('Đã đổi mã PIN Admin thành công và đồng bộ cho tất cả các máy!');
+      setIsChangingPin(false);
+      setOldPin('');
+      setNewPin('');
+      setConfirmNewPin('');
+      setError('');
+    } catch (err) {
+      console.error(err);
+      setError('Không thể đồng bộ mã PIN mới lên cơ sở dữ liệu. Vui lòng thử lại.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -105,7 +154,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
               setIsChangingPin(false);
               onClose();
             }}
-            className="p-1.5 text-white/70 hover:text-white rounded-lg hover:bg-white/10 transition"
+            className="p-1.5 text-white/70 hover:text-white rounded-lg hover:bg-white/10 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -128,7 +177,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
           )}
 
           {!isChangingPin ? (
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-4" autoComplete="off">
               <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 text-xs text-slate-600 leading-relaxed">
                 <p className="font-semibold text-slate-800 flex items-center gap-1.5 mb-1">
                   <Lock className="w-3.5 h-3.5 text-blue-600" />
@@ -156,14 +205,20 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
                       setPin(e.target.value);
                       if (error) setError('');
                     }}
-                    placeholder="Nhập mã PIN bảo mật"
+                    placeholder=""
+                    autoComplete="new-password"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck="false"
+                    data-lpignore="true"
+                    data-form-type="other"
                     autoFocus
                     className="w-full px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden font-mono tracking-wider transition"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPin(!showPin)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
                   >
                     {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -180,7 +235,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
                     setConfirmNewPin('');
                     setError('');
                   }}
-                  className="text-xs text-slate-500 hover:text-blue-600 underline"
+                  className="text-xs text-slate-500 hover:text-blue-600 underline cursor-pointer"
                 >
                   Đổi mã PIN mới?
                 </button>
@@ -189,23 +244,24 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition"
+                    className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer"
                   >
                     Hủy
                   </button>
                   <button
                     id="btn-confirm-admin-login"
                     type="submit"
-                    className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-xl shadow-md shadow-blue-500/20 transition flex items-center gap-1.5"
+                    disabled={isLoading}
+                    className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-xl shadow-md shadow-blue-500/20 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
-                    <ShieldCheck className="w-4 h-4" />
+                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
                     <span>Mở khóa soạn thảo</span>
                   </button>
                 </div>
               </div>
             </form>
           ) : (
-            <form onSubmit={handleChangePinSubmit} className="space-y-3">
+            <form onSubmit={handleChangePinSubmit} className="space-y-3" autoComplete="off">
               <div className="text-xs text-slate-600 mb-2">
                 Để đổi mã PIN, vui lòng xác nhận mã PIN hiện tại trước:
               </div>
@@ -219,7 +275,12 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
                     setOldPin(e.target.value);
                     if (error) setError('');
                   }}
-                  placeholder="Nhập mã PIN đang sử dụng"
+                  placeholder=""
+                  autoComplete="new-password"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck="false"
+                  data-lpignore="true"
                   autoFocus
                   className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden font-mono tracking-wider"
                 />
@@ -234,7 +295,12 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
                     setNewPin(e.target.value);
                     if (error) setError('');
                   }}
-                  placeholder="Tối thiểu 4 ký tự"
+                  placeholder=""
+                  autoComplete="new-password"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck="false"
+                  data-lpignore="true"
                   className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden font-mono tracking-wider"
                 />
               </div>
@@ -248,7 +314,12 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
                     setConfirmNewPin(e.target.value);
                     if (error) setError('');
                   }}
-                  placeholder="Nhập lại để xác nhận"
+                  placeholder=""
+                  autoComplete="new-password"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck="false"
+                  data-lpignore="true"
                   className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden font-mono tracking-wider"
                 />
               </div>
@@ -263,15 +334,17 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
                     setConfirmNewPin('');
                     setError('');
                   }}
-                  className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition"
+                  className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer"
                 >
                   Quay lại
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition shadow-xs"
+                  disabled={isLoading}
+                  className="px-4 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition shadow-xs cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                 >
-                  Xác nhận đổi PIN
+                  {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>Xác nhận đổi PIN</span>
                 </button>
               </div>
             </form>

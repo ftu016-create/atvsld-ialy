@@ -742,6 +742,14 @@ export async function generateAndDownloadDocx(report: ReportData): Promise<void>
   });
 
   // 9. Appendix: Images Table (Optimized for Landscape with large 320x210 pictures)
+  // Chỉ tạo phụ lục và dòng khi có ảnh thực tế ("có hình thì mới dòng")
+  const validImages = (report.images || []).filter((img) => Boolean(img && img.dataUrl && img.dataUrl.trim()));
+
+  // Lấy các STT duy nhất có ảnh thực tế đính kèm
+  const activeStts: number[] = Array.from(
+    new Set<number>(validImages.map((img) => Number(img.stt) || 1))
+  ).sort((a: number, b: number) => a - b);
+
   const appendixParagraphs: Paragraph[] = [
     new Paragraph({
       pageBreakBefore: true,
@@ -757,12 +765,6 @@ export async function generateAndDownloadDocx(report: ReportData): Promise<void>
       ],
     }),
   ];
-
-  const maxStt = Math.max(
-    1,
-    ...report.images.map((img) => img.stt || 1),
-    4
-  );
 
   const imageTableRows: TableRow[] = [
     new TableRow({
@@ -796,9 +798,14 @@ export async function generateAndDownloadDocx(report: ReportData): Promise<void>
     }),
   ];
 
-  for (let stt = 1; stt <= maxStt; stt++) {
-    const imgST = report.images.find((x) => x.stt === stt && x.side === 'ST');
-    const imgMR = report.images.find((x) => x.stt === stt && x.side === 'MR');
+  for (let idx = 0; idx < activeStts.length; idx++) {
+    const stt = activeStts[idx];
+    const displayNum = String(idx + 1);
+    const imgST = validImages.find((x) => x.stt === stt && x.side === 'ST');
+    const imgMR = validImages.find((x) => x.stt === stt && x.side === 'MR');
+
+    const captionST = imgST ? (imgST.caption || `Vị trí kiểm tra ${displayNum} - NMTĐ Ialy`) : '';
+    const captionMR = imgMR ? (imgMR.caption || `Vị trí kiểm tra ${displayNum} - NMTĐ Ialy Mở Rộng`) : '';
 
     // Caption row
     imageTableRows.push(
@@ -806,27 +813,27 @@ export async function generateAndDownloadDocx(report: ReportData): Promise<void>
         children: [
           new TableCell({
             borders: standardBorder,
-            children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: String(stt), bold: true, size: 26, font: 'Times New Roman' })] })],
+            children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: displayNum, bold: true, size: 26, font: 'Times New Roman' })] })],
           }),
           new TableCell({
             borders: standardBorder,
             children: [
               new Paragraph({
                 alignment: AlignmentType.CENTER,
-                children: [new TextRun({ text: imgST?.caption || `Vị trí kiểm tra ${stt} - NMTĐ Ialy`, italics: true, size: 26, font: 'Times New Roman' })],
+                children: [new TextRun({ text: captionST, italics: true, size: 26, font: 'Times New Roman' })],
               }),
             ],
           }),
           new TableCell({
             borders: standardBorder,
-            children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: String(stt), bold: true, size: 26, font: 'Times New Roman' })] })],
+            children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: displayNum, bold: true, size: 26, font: 'Times New Roman' })] })],
           }),
           new TableCell({
             borders: standardBorder,
             children: [
               new Paragraph({
                 alignment: AlignmentType.CENTER,
-                children: [new TextRun({ text: imgMR?.caption || `Vị trí kiểm tra ${stt} - NMTĐ Ialy Mở Rộng`, italics: true, size: 26, font: 'Times New Roman' })],
+                children: [new TextRun({ text: captionMR, italics: true, size: 26, font: 'Times New Roman' })],
               }),
             ],
           }),
@@ -866,7 +873,7 @@ export async function generateAndDownloadDocx(report: ReportData): Promise<void>
       stImgParagraphs.push(
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          children: [new TextRun({ text: '(Chưa có ảnh)', italics: true, color: '888888', size: 24, font: 'Times New Roman' })],
+          children: [new TextRun({ text: '', size: 24, font: 'Times New Roman' })],
         })
       );
     }
@@ -902,7 +909,7 @@ export async function generateAndDownloadDocx(report: ReportData): Promise<void>
       mrImgParagraphs.push(
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          children: [new TextRun({ text: '(Chưa có ảnh)', italics: true, color: '888888', size: 24, font: 'Times New Roman' })],
+          children: [new TextRun({ text: '', size: 24, font: 'Times New Roman' })],
         })
       );
     }
@@ -993,8 +1000,7 @@ export async function generateAndDownloadDocx(report: ReportData): Promise<void>
           ...sectionDParagraphs,
           new Paragraph({ spacing: { before: 160 } }),
           signaturesTable,
-          ...appendixParagraphs,
-          imageTable,
+          ...(activeStts.length > 0 ? [...appendixParagraphs, imageTable] : []),
         ],
       },
     ],
