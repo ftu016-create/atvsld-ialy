@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Lock, KeyRound, AlertCircle, X, CheckCircle2, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { ShieldCheck, Lock, KeyRound, AlertCircle, X, CheckCircle2, Loader2 } from 'lucide-react';
 import { getSharedAdminPin, setSharedAdminPin, subscribeToSharedAdminPin, DEFAULT_ADMIN_PIN } from '../lib/firebase';
+import { SecureSecretInput } from './SecureSecretInput';
 
 interface AdminAuthModalProps {
   isOpen: boolean;
@@ -214,47 +215,17 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
                     Nhập mã PIN Admin:
                   </span>
                 </label>
-                <div className="relative">
-                  <input
-                    id="input-admin-pin"
-                    name="admin_system_code_entry"
-                    type="text"
-                    inputMode="text"
-                    value={pin}
-                    onChange={(e) => {
-                      setPin(e.target.value);
-                      if (error) setError('');
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleLogin();
-                      }
-                    }}
-                    style={{
-                      WebkitTextSecurity: showPin ? 'none' : 'disc',
-                    }}
-                    placeholder=""
-                    autoComplete="off"
-                    autoCorrect="off"
-                    autoCapitalize="off"
-                    spellCheck={false}
-                    aria-autocomplete="none"
-                    data-lpignore="true"
-                    data-1p-ignore="true"
-                    data-bwignore="true"
-                    data-form-type="other"
-                    autoFocus
-                    className="w-full px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden font-mono tracking-wider transition"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPin(!showPin)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
-                  >
-                    {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
+                <SecureSecretInput
+                  id="secure-admin-pin"
+                  value={pin}
+                  onChange={(val) => {
+                    setPin(val);
+                    if (error) setError('');
+                  }}
+                  onEnter={() => handleLogin()}
+                  placeholder="Nhấp vào đây và gõ mã PIN..."
+                  autoFocus
+                />
               </div>
 
               <div className="flex items-center justify-between pt-2">
@@ -301,83 +272,42 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Mã PIN cũ (hiện tại):</label>
-                <input
-                  name="old_sec_key_val"
-                  type="text"
+                <SecureSecretInput
+                  id="secure-old-pin"
                   value={oldPin}
-                  onChange={(e) => {
-                    setOldPin(e.target.value);
+                  onChange={(val) => {
+                    setOldPin(val);
                     if (error) setError('');
                   }}
-                  style={{ WebkitTextSecurity: 'disc' }}
-                  placeholder=""
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  spellCheck={false}
-                  aria-autocomplete="none"
-                  data-lpignore="true"
-                  data-1p-ignore="true"
-                  data-bwignore="true"
-                  data-form-type="other"
+                  placeholder="Nhập mã PIN cũ..."
                   autoFocus
-                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden font-mono tracking-wider"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Mã PIN mới:</label>
-                <input
-                  name="new_sec_key_val"
-                  type="text"
+                <SecureSecretInput
+                  id="secure-new-pin"
                   value={newPin}
-                  onChange={(e) => {
-                    setNewPin(e.target.value);
+                  onChange={(val) => {
+                    setNewPin(val);
                     if (error) setError('');
                   }}
-                  style={{ WebkitTextSecurity: 'disc' }}
-                  placeholder=""
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  spellCheck={false}
-                  aria-autocomplete="none"
-                  data-lpignore="true"
-                  data-1p-ignore="true"
-                  data-bwignore="true"
-                  data-form-type="other"
-                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden font-mono tracking-wider"
+                  placeholder="Nhập mã PIN mới (từ 4 ký tự)..."
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Nhập lại mã PIN mới:</label>
-                <input
-                  name="confirm_sec_key_val"
-                  type="text"
+                <SecureSecretInput
+                  id="secure-confirm-pin"
                   value={confirmNewPin}
-                  onChange={(e) => {
-                    setConfirmNewPin(e.target.value);
+                  onChange={(val) => {
+                    setConfirmNewPin(val);
                     if (error) setError('');
                   }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleChangePinSubmit();
-                    }
-                  }}
-                  style={{ WebkitTextSecurity: 'disc' }}
-                  placeholder=""
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  spellCheck={false}
-                  aria-autocomplete="none"
-                  data-lpignore="true"
-                  data-1p-ignore="true"
-                  data-bwignore="true"
-                  data-form-type="other"
-                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden font-mono tracking-wider"
+                  onEnter={() => handleChangePinSubmit()}
+                  placeholder="Nhập lại mã PIN mới..."
                 />
               </div>
 
