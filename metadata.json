@@ -1,0 +1,6 @@
+{
+  "name": "Biên Bản ATVSLĐ Ialy",
+  "description": "Hệ thống tạo, quản lý và xuất biên bản kiểm tra ATVSLĐ chuẩn Word (.docx) cho Thủy điện Ialy",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
