@@ -176,7 +176,7 @@ export function createAutomatedNewReport(
             idx: '7.1',
             content: `Thực hiện kiến nghị của đợt kiểm tra Tháng ${latestReport.thang_nam}`,
             result: `Toàn bộ các kiến nghị của kỳ kiểm tra Tháng ${latestReport.thang_nam} đã được các bộ phận liên quan hoàn thành và khắc phục đầy đủ.`,
-            recommendation: 'Không phát sinh kiến nghị sau kiểm tra',
+            recommendation: 'Không',
             note: 'Đã xử lý xong',
             status: 'completed',
           },
@@ -302,14 +302,14 @@ export function sanitizeReportGroups(report: ReportData): ReportData {
             idx: "2.1",
             content: "Sổ theo dõi trang cấp BHLĐ; Sổ theo dõi trang bị, dụng cụ an toàn.",
             result: "Hồ sơ theo dõi trang cấp BHLĐ và dụng cụ an toàn được cập nhật đầy đủ",
-            recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+            recommendation: "Không",
             note: ""
           },
           {
             idx: "2.2",
             content: "Các Quy trình, quy định đã ban hành (liên quan đến công tác an toàn)",
             result: "Trong tháng không ban hành mới hoặc sửa đổi các quy trình, quy định liên quan đến công tác an toàn",
-            recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+            recommendation: "Không",
             note: ""
           }
         ];

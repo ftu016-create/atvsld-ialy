@@ -63,7 +63,7 @@ export const InspectionTableEditor: React.FC<InspectionTableEditorProps> = ({ gr
           idx: `${nextStt}.1`,
           content: '',
           result: 'Bảo đảm yêu cầu an toàn theo quy định',
-          recommendation: 'Không phát sinh kiến nghị sau kiểm tra',
+          recommendation: 'Không',
           note: '',
         },
       ],
@@ -118,7 +118,7 @@ export const InspectionTableEditor: React.FC<InspectionTableEditorProps> = ({ gr
         idx: nextIndex,
         content: "",
         result: "Bảo đảm yêu cầu an toàn theo quy định",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: "",
       },
     ];
@@ -139,7 +139,7 @@ export const InspectionTableEditor: React.FC<InspectionTableEditorProps> = ({ gr
   };
 
   const handleResetRowStandard = (groupIndex: number, rowIndex: number) => {
-    handleRowChange(groupIndex, rowIndex, 'recommendation', 'Không phát sinh kiến nghị sau kiểm tra');
+    handleRowChange(groupIndex, rowIndex, 'recommendation', 'Không');
   };
 
   // Filter groups
@@ -418,7 +418,7 @@ export const InspectionTableEditor: React.FC<InspectionTableEditorProps> = ({ gr
                                   ? 'bg-amber-50/50 border-amber-300 focus:ring-amber-500/20 focus:border-amber-500'
                                   : 'bg-white border-slate-200 focus:ring-blue-500/20 focus:border-blue-500'
                               }`}
-                              placeholder="Không phát sinh kiến nghị sau kiểm tra..."
+                              placeholder="Không..."
                             />
                           </div>
 
