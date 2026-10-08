@@ -28,28 +28,28 @@ export const DEFAULT_GROUPS: InspectionGroup[] = [
         idx: "1.1",
         content: "Việc thực hiện các quy định về ATVSLĐ; khai báo, điều tra, thống kê tai nạn lao động",
         result: "Thực hiện đầy đủ các quy định về ATVSLĐ; không xảy ra tai nạn lao động, không có vụ việc phải khai báo hoặc điều tra",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: ""
       },
       {
         idx: "1.2",
         content: "Đánh giá nguy cơ rủi ro về ATVSLĐ",
         result: "Đã thực hiện đánh giá nguy cơ rủi ro về ATVSLĐ theo quy định",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: ""
       },
       {
         idx: "1.3",
         content: "Huấn luyện về ATVSLĐ, xây dựng và thực hiện VHAT",
         result: "- Người lao động được huấn luyện đầy đủ về ATVSLĐ và chấp hành tốt các quy định về Văn hóa an toàn.\n- Phân xưởng đã Diễn tập XLSC; ứng cứu khẩn cấp ATVSLĐ; chữa cháy và cứu nạn, cứu hộ tại các Nhà máy Ialy và Ialy MR năm 2026 theo Lịch diễn tập số 1067/VHIALY, ngày 07/07/2026",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: ""
       },
       {
         idx: "1.4",
         content: "Thống kê tổng hợp vụ cận nguy xảy ra tại đơn vị",
         result: "Không phát sinh vụ cận nguy trong kỳ kiểm tra",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: ""
       }
     ]
@@ -62,14 +62,14 @@ export const DEFAULT_GROUPS: InspectionGroup[] = [
         idx: "2.1",
         content: "Sổ theo dõi trang cấp BHLĐ; Sổ theo dõi trang bị, dụng cụ an toàn.",
         result: "Hồ sơ theo dõi trang cấp BHLĐ và dụng cụ an toàn được cập nhật đầy đủ",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: ""
       },
       {
         idx: "2.2",
         content: "Các Quy trình, quy định đã ban hành (liên quan đến công tác an toàn)",
         result: "Trong tháng không ban hành mới hoặc sửa đổi các quy trình, quy định liên quan đến công tác an toàn",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: ""
       }
     ]
@@ -82,7 +82,7 @@ export const DEFAULT_GROUPS: InspectionGroup[] = [
         idx: "3.1",
         content: "Thực hiện thao tác theo PTT: Số lượng, kết quả",
         result: "Các thao tác theo PTT được thực hiện 41 phiếu đúng quy trình, bảo đảm an toàn.",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: ""
       },
       {
@@ -96,7 +96,7 @@ export const DEFAULT_GROUPS: InspectionGroup[] = [
         idx: "3.3",
         content: "Các biện pháp an toàn",
         result: "Các biện pháp an toàn được triển khai đầy đủ và hiệu quả",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: ""
       }
     ]
@@ -109,21 +109,21 @@ export const DEFAULT_GROUPS: InspectionGroup[] = [
         idx: "4.1",
         content: "Vệ sinh của các máy, thiết bị, nhà xưởng, kho tàng và nơi làm việc như: Che chắn tại các vị trí nguy hiểm, độ tin cậy của các cơ cấu an toàn, chống nóng, chống bụi, chiếu sáng, thông gió, thoát nước và các hệ thống khác",
         result: "Các khu vực sản xuất được duy trì sạch sẽ; máy móc, thiết bị và hệ thống phụ trợ bảo đảm điều kiện an toàn phục vụ sản xuất.",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: ""
       },
       {
         idx: "4.2",
         content: "Trang bị, phương tiện phục vụ công tác bảo vệ môi trường",
         result: "Trang bị và phương tiện bảo vệ môi trường đầy đủ, hoạt động tốt",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: ""
       },
       {
         idx: "4.3",
         content: "Việc thu gom, phân loại, xử lý chất thải",
         result: "Chất thải được thu gom, phân loại và xử lý đúng quy định",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: ""
       }
     ]
@@ -136,28 +136,28 @@ export const DEFAULT_GROUPS: InspectionGroup[] = [
         idx: "5.1",
         content: "Trang bị phương tiện bảo vệ cá nhân: Sổ theo dõi trang cấp, giao nhận PTBVCN",
         result: "Trang bị phương tiện bảo vệ cá nhân đầy đủ, hồ sơ theo dõi được cập nhật",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: ""
       },
       {
         idx: "5.2",
         content: "Kiểm tra trang bị phương tiện kỹ thuật phòng cháy chữa cháy",
         result: "Phương tiện kỹ thuật PCCC được trang bị đầy đủ, tình trạng tốt",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: ""
       },
       {
         idx: "5.3",
         content: "Theo dõi kiểm tra, thử nghiệm, kiểm định các dụng cụ an toàn",
         result: "Dụng cụ an toàn được kiểm tra, thử nghiệm, kiểm định đúng thời hạn",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: ""
       },
       {
         idx: "5.4",
         content: "Phương tiện cấp cứu y tế",
         result: "Phương tiện cấp cứu y tế đầy đủ, sẵn sàng sử dụng",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: ""
       }
     ]
@@ -170,7 +170,7 @@ export const DEFAULT_GROUPS: InspectionGroup[] = [
         idx: "6.1",
         content: "Việc thực hiện các nội dung của kế hoạch ATVSLĐ",
         result: "Các nội dung kế hoạch ATVSLĐ được thực hiện theo tiến độ",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: ""
       }
     ]
@@ -183,7 +183,7 @@ export const DEFAULT_GROUPS: InspectionGroup[] = [
         idx: "7.1",
         content: "Thực hiện kiến nghị của các đoàn kiểm tra tháng trước",
         result: "Các kiến nghị của kỳ kiểm tra trước đã được các bộ phận liên quan thực hiện và khắc phục đầy đủ",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: ""
       }
     ]
@@ -196,14 +196,14 @@ export const DEFAULT_GROUPS: InspectionGroup[] = [
         idx: "8.1",
         content: "Quản lý các thiết bị, vật tư và các chất có yêu cầu nghiêm ngặt về an toàn lao động",
         result: "Thiết bị, vật tư có yêu cầu nghiêm ngặt về ATLĐ được quản lý đúng quy định",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: ""
       },
       {
         idx: "8.2",
         content: "Quản lý các yếu tố nguy hiểm có hại, các khu vực, vị trí làm việc có kết quả quan trắc môi trường không đạt.",
         result: "Các yếu tố nguy hiểm, có hại được kiểm soát; Qua kiểm tra không phát hiện yếu tố nguy hiểm, có hại vượt mức cho phép hoặc bất thường ảnh hưởng đến an toàn lao động.",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: ""
       }
     ]
@@ -216,7 +216,7 @@ export const DEFAULT_GROUPS: InspectionGroup[] = [
         idx: "9.1",
         content: "Kiến thức ATVSLĐ, khả năng xử lý sự cố và sơ cứu, cấp cứu của NLĐ",
         result: "Người lao động nắm vững kiến thức ATVSLĐ và kỹ năng xử lý sự cố",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: ""
       }
     ]
@@ -229,7 +229,7 @@ export const DEFAULT_GROUPS: InspectionGroup[] = [
         idx: "10.1",
         content: "Tổ chức ăn uống bồi dưỡng, chăm sóc sức khỏe NLĐ",
         result: "Công tác chăm sóc sức khỏe và bồi dưỡng NLĐ được thực hiện đầy đủ",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: ""
       }
     ]
@@ -242,7 +242,7 @@ export const DEFAULT_GROUPS: InspectionGroup[] = [
         idx: "11.1",
         content: "Hoạt động tự kiểm tra các Kíp, việc khắc phục và giải quyết các đề xuất, kiến nghị về ATVSLĐ",
         result: "Các kíp trực thực hiện đầy đủ việc tự kiểm tra đầu ca, trong ca; Các tồn tại được xử lý kịp thời hoặc báo cáo cấp có thẩm quyền để theo dõi, xử lý theo quy định.",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: ""
       }
     ]
@@ -255,7 +255,7 @@ export const DEFAULT_GROUPS: InspectionGroup[] = [
         idx: "12.1",
         content: "Trách nhiệm quản lý công tác ATVSLĐ và phong trào quần chúng về ATVSLĐ",
         result: "Thực hiện tốt trách nhiệm quản lý ATVSLĐ và phong trào quần chúng",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: ""
       }
     ]
@@ -268,7 +268,7 @@ export const DEFAULT_GROUPS: InspectionGroup[] = [
         idx: "13.1",
         content: "Công tác sơ kết, tổng kết, báo cáo theo các quy định hiện hành",
         result: "Trong tháng không phát sinh yêu cầu sơ kết, tổng kết hoặc báo cáo chuyên đề riêng về công tác ATVSLĐ",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: ""
       }
     ]
@@ -281,7 +281,7 @@ export const DEFAULT_GROUPS: InspectionGroup[] = [
         idx: "14.1",
         content: "Kiểm tra việc xây dựng và thực hiện các phương án ứng cứu khẩn cấp",
         result: "Các phương án ứng cứu khẩn cấp được xây dựng và duy trì thực hiện",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: ""
       }
     ]
@@ -294,7 +294,7 @@ export const DEFAULT_GROUPS: InspectionGroup[] = [
         idx: "15.1",
         content: "Kiểm tra hiện trường đường dây trên không, trạm điện, nhà máy điện",
         result: "Hiện trường đường dây trên không, nhà máy, trạm điện bảo đảm yêu cầu an toàn",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: ""
       }
     ]
@@ -307,7 +307,7 @@ export const DEFAULT_GROUPS: InspectionGroup[] = [
         idx: "16.1",
         content: "Các nội dung khác",
         result: "Không có nội dung bất thường khác được ghi nhận",
-        recommendation: "Không phát sinh kiến nghị sau kiểm tra",
+        recommendation: "Không",
         note: ""
       }
     ]
