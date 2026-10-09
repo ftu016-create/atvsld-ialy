@@ -47,9 +47,7 @@ export const RecommendationsEditor: React.FC<RecommendationsEditorProps> = ({
             <h2 className="text-base font-bold text-slate-900">
               4. Kết luận & Kiến nghị chung (Mục D)
             </h2>
-            <p className="text-xs text-slate-500">
-              Các chỉ đạo, yêu cầu đối với các cá nhân và đơn vị trực thuộc
-            </p>
+            
           </div>
         </div>
 

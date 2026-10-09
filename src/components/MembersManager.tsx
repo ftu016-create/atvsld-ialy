@@ -86,9 +86,7 @@ export const MembersManager: React.FC<MembersManagerProps> = ({ members, onChang
             <h2 className="text-base font-bold text-slate-900">
               2. Thành phần đoàn kiểm tra (Mục A)
             </h2>
-            <p className="text-xs text-slate-500">
-              Tổng số: {members.length} thành viên • Nhấn biểu tượng <strong>"Ký"</strong> tương ứng trên từng người để ký trực tiếp hoặc tải ảnh
-            </p>
+            
           </div>
         </div>
 

@@ -530,7 +530,7 @@ export default function App() {
                       </span>
                     </h2>
                     <p className="text-xs text-blue-100 font-medium">
-                      VHIALY • Công ty Thủy điện Ialy • Soạn thảo & Xuất Word chuẩn EVN
+                      VHIALY • Công ty Thủy điện Ialy
                     </p>
                   </div>
                 </div>
@@ -592,10 +592,7 @@ export default function App() {
 
               {/* Bottom Export Bar */}
               <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="text-xs text-slate-500">
-                  <p className="font-semibold text-slate-800">Hoàn thành soạn thảo biên bản?</p>
-                  <p>Nhấn "Lưu vào hệ thống" để cập nhật kho lưu trữ hoặc "Tải file Word" để in ấn, trình ký.</p>
-                </div>
+                
 
                 <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
                   <button

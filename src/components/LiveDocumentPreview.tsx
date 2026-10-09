@@ -54,14 +54,11 @@ export const LiveDocumentPreview: React.FC<LiveDocumentPreviewProps> = ({
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-blue-600" />
             <span className="text-sm font-bold text-slate-900">
-              Biên bản Tháng {report.thang_nam} (A4 Ngang)
+              Biên bản Tháng {report.thang_nam}
             </span>
           </div>
 
-          <span className="hidden lg:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <Layers className="w-3 h-3" />
-            297mm × 210mm
-          </span>
+          
         </div>
 
         <div className="flex items-center gap-2">

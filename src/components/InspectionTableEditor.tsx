@@ -176,9 +176,7 @@ export const InspectionTableEditor: React.FC<InspectionTableEditorProps> = ({ gr
             <h2 className="text-base font-bold text-slate-900">
               3. Bảng nội dung & Kết quả kiểm tra ({groups.length} Nhóm tiêu chí)
             </h2>
-            <p className="text-xs text-slate-500">
-              Chuẩn quy định ATVSLĐ Nhà máy Thủy điện Ialy & Ialy Mở Rộng
-            </p>
+            
           </div>
         </div>
 
@@ -470,9 +468,7 @@ export const InspectionTableEditor: React.FC<InspectionTableEditorProps> = ({ gr
             <Sparkles className="w-4 h-4 text-blue-600" />
             <span>Thêm Mục kiểm tra mới hoặc thêm dòng tiêu chí</span>
           </p>
-          <p className="text-[11px] text-slate-500 mt-0.5">
-            Hiện có {groups.length} Mục. Bạn có thể mở rộng thêm Mục 17, 18... không giới hạn
-          </p>
+          
         </div>
 
         <div className="flex items-center">
